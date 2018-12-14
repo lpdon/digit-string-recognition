@@ -31,6 +31,7 @@ def train(dataset_root: str, epochs: int, verbose: bool=False):
         for image, gt in dataset:
             image.show()
             input("Press enter to show next image..")
+
     # Test here
 
 
