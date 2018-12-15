@@ -82,7 +82,7 @@ def recognition_rate(preds: List[List[str]], gt: List[str], top_k=3):
     recog = 0
 
     for k_preds, target in zip(preds, gt):
-        for pred in k_preds:
+        for pred in k_preds.sort()[:-top_k]:
             if pred == target:
                 recog += 1
                 continue
