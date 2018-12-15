@@ -70,6 +70,43 @@ def discover_dataset(dir: str, verbose: bool = True) -> Tuple[List[Tuple[str, st
     return images, subset_map
 
 
+def map_subset_name(subset, subset_name_map):
+    if not subset_name_map:
+        return subset
+    elif subset_name_map == 'auto':
+        keys = ["train", "test"]
+        for key in keys:
+            if key in subset:
+                return key
+    elif subset in subset_name_map:
+        return subset_name_map[subset]
+    return subset
+
+
+class TransformSubset(data.Subset):
+    """
+    Subset of a dataset at specified indices which also supports input transforms.
+
+    Arguments:
+        dataset (Dataset): The whole Dataset
+        indices (sequence): Indices in the whole set selected for subset
+        transform (callable): Function which transforms input
+        target_transform (callable): Function which transforms target
+    """
+    def __init__(self, dataset, indices, transform=None, target_transform=None):
+        super(TransformSubset, self).__init__(dataset, indices)
+        self.transform = transform
+        self.target_transform = target_transform
+
+    def __getitem__(self, idx):
+        sample, target = super(TransformSubset, self).__getitem__(idx)
+        if self.transform is not None:
+            sample = self.transform(sample)
+        if self.target_transform is not None:
+            target = self.target_transform(target)
+        return sample, target
+
+
 class CAR(data.Dataset):
     """A generic data loader where the samples are arranged in this way: ::
 
@@ -89,19 +126,25 @@ class CAR(data.Dataset):
     Args:
         root (string): Root directory path.
         loader (callable): A function to load a sample given its path.
-        extensions (list[string]): A list of allowed extensions.
-        transform (callable, optional): A function/transform that takes in
-            a sample and returns a transformed version.
-            E.g, ``transforms.RandomCrop`` for images.
-        target_transform (callable, optional): A function/transform that takes
-            in the target and transforms it.
+        transform (Dict[str, callable], optional): 
+            A dict from subset_names to functions which transform the input images.
+        target_transform (callable, optional): 
+            A function/transform that takes in a target and returns a transformed version.
+        subset_name_map ('auto' or dict[str, str] or None):
+            Either a dict which maps the folder to some chosen subset names (e.g. train, test).
+            If 'auto' it will be checked if {train, test} is a substring 
+            of the subset name and will then be used. Subset names not matching this pattern are not touched.
+              e.g: a_train -> train
+            'auto' works for the standard CAR-A and CAR-B datasets.
+            If None is given the subset names are not changed.
 
      Attributes:
         samples (list): List of (sample path, subset_index) tuples
     """
 
-    def __init__(self, root, loader=default_loader, transform=None, target_transform=None):
-        samples, subset_map = discover_dataset(root)
+    def __init__(self, root, loader=default_loader, transform=None, target_transform=None,
+                 subset_name_map='auto'):
+        samples, subset_to_idx = discover_dataset(root)
         if len(samples) == 0:
             raise(RuntimeError("Found 0 files in subfolders of: " + root))
 
@@ -109,15 +152,20 @@ class CAR(data.Dataset):
         self.loader = loader
 
         self.samples = samples
-        self.subsets = self.create_subsets(subset_map)
 
         self.transform = transform
         self.target_transform = target_transform
+        
+        self.subsets = self.create_subsets(subset_to_idx, subset_name_map)
 
-    def create_subsets(self, subset_map: Dict[str, List[str]]) -> Dict[str, Subset]:
+    def create_subsets(self, subset_map: Dict[str, List[str]],
+                       subset_name_map) -> Dict[str, Subset]:
         subsets = {}
         for subset_name, indices in subset_map.items():
-            subset = Subset(self, indices)
+            subset_name = map_subset_name(subset_name, subset_name_map)
+            transform = self.transform[subset_name] if self.transform else None
+            target_transform = self.target_transform[subset_name] if self.target_transform else None
+            subset = TransformSubset(self, indices, transform, target_transform)
             subsets[subset_name] = subset
         return subsets
 
@@ -131,11 +179,6 @@ class CAR(data.Dataset):
         """
         path, target = self.samples[index]
         sample = self.loader(path)
-        if self.transform is not None:
-            sample = self.transform(sample)
-        if self.target_transform is not None:
-            target = self.target_transform(target)
-
         return sample, target
 
     def __len__(self) -> int:
