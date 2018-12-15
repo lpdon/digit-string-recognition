@@ -1,7 +1,12 @@
 from argparse import ArgumentParser, Namespace
-from torchvision.transforms import Resize
+from torchvision import transforms
+from torchvision.transforms import Resize, ToTensor
+import torch
+import torch.nn as nn
+from PIL import Image
 
 from car_dataset import CAR
+from model import StringNet
 
 
 def parse_args():
@@ -12,31 +17,81 @@ def parse_args():
                         help="Number of epochs to train the model.")
     parser.add_argument("--target-size", nargs=2, type=int, default=(100, 300),
                         help="Y and X size to which the images should be resized.")
-    parser.add_argument("-v", "--verbose", action='store_true', default=False, required=False,
+    parser.add_argument("-v", "--verbose", action="store_true", default=False, required=False,
                         help="Print more information.")
     return parser.parse_args()
 
 
-def build_model():
-    pass
+def build_model(d_in, d_out):
+    return StringNet(d_in, d_out)
 
 
 def train(args: Namespace, verbose: bool = False):
     # Load dataset
     width, height = args.target_size
-    transform = Resize((width, height))
+    transform = transforms.Compose([Resize((width, height)), transforms.ToTensor()])
+
     dataset = CAR(args.data, transform=transform)
+    train_loader = torch.utils.data.DataLoader(dataset, batch_size=16, shuffle=True)
+
     if verbose:
         print(dataset)
 
-    build_model()
+    model = build_model((width, height), 10)
+    optimizer = torch.optim.Adam(model.parameters(), lr = 0.0001)
+    # floss = nn.CrossEntropyLoss()
+    floss = nn.NLLLoss()
+
+    cuda_avail = torch.cuda.is_available()
+
+    if cuda_avail:
+        model.cuda()
+
+    model.train()
 
     # Train here
     for epoch in range(args.epochs):
-        for image, gt in dataset:
-            image.show()
-            print("Label: " + gt)
-            input("Press enter to show next image..")
+        total_loss = 0
+        num_loss = 0
+
+        # for image, gt in dataset:
+        for batch_idx, (image, gt) in enumerate(train_loader): 
+            image = image.float()
+            # print(image)
+
+            # image = image.unsqueeze(0) 
+            # print(image.size())
+
+            # gt = int(str(gt)[0])
+            # gt = tuple(map(int, gt))
+            # print(gt)
+
+
+            # gt = torch.Tensor([gt])
+            gt = gt.long()
+
+            print(gt)
+
+            if cuda_avail:
+                image = image.cuda()
+                gt = gt.cuda()
+
+            optimizer.zero_grad()
+            output = model(image)
+            loss = floss(output, gt)
+            loss.backward()
+            optimizer.step()
+
+            # transforms.ToPILImage()(images[0]).show()
+
+            # print(output)
+            # print(gt.item())
+            # print(loss.item())
+
+            total_loss += loss.item()
+            num_loss += 1
+
+        print("%3d: %f" % (epoch, total_loss/num_loss))
 
     # Test here
 
