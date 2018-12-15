@@ -1,4 +1,5 @@
 from typing import List
+import numpy as np
 
 
 def levenshtein_distance(pred: str, gt: str, w_sub=1, w_del=1, w_ins=1) -> int:
@@ -41,15 +42,18 @@ def levenshtein_distance(pred: str, gt: str, w_sub=1, w_del=1, w_ins=1) -> int:
     return d[n][m]  
 
 
-def normalized_levenshtein_distance(pred: str, gt: str) -> float:
+def normalized_levenshtein_distance(pred: str, gt: str, w_sub=1, w_del=1, w_ins=1) -> float:
     """
     Calculates the normalzed levenshtein distance between two words.
     See: http://www.orand.cl/en/icfhr2014-hdsr/#evaluation
     :param pred: the predicted word
     :param gt: the ground truth
+    :param w_sub: weight for substitutions
+    :param w_del: weight for deletions
+    :param w_ins: weight for insertions
     :return: the normalized levenshtein distance
-    """
-    raise NotImplementedError()
+    """    
+    return 1.0 - (levenshtein_distance(prd, gt, w_sub, w_del, w_ins)/float(np.max(len(pred), len(gt))))
 
 
 def average_nomralized_levenshtein_distance(preds: List[str], gt: List[str]) -> float:
