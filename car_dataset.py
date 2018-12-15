@@ -121,7 +121,7 @@ class CAR(data.Dataset):
             subsets[subset_name] = subset
         return subsets
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> Tuple[Image.Image, str]:
         """
         Args:
             index (int): Index
@@ -138,7 +138,7 @@ class CAR(data.Dataset):
 
         return sample, target
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.samples)
 
     def __repr__(self):
@@ -152,4 +152,14 @@ class CAR(data.Dataset):
         fmt_str += '\n\tSubsets: \n'
         for name, subset in self.subsets.items():
             fmt_str += '\t\t{}: number of datapoints: {}\n'.format(name, len(subset))
+        return fmt_str
+
+    def statistics(self) -> str:
+        fmt_str = "Max Width: {}\n".format(max([img.width for img, gt in self]))
+        fmt_str += "Max Height: {}\n".format(max([img.height for img, gt in self]))
+        fmt_str += "Min Width: {}\n".format(min([img.width for img, gt in self]))
+        fmt_str += "Min Height: {}\n".format(min([img.height for img, gt in self]))
+        fmt_str += "Avg Width: {}\n".format(sum([img.width for img, gt in self]) / float(len(self)))
+        fmt_str += "Avg Height: {}\n".format(sum([img.height for img, gt in self]) / float(len(self)))
+        fmt_str += "Avg Aspect: {}\n".format(sum([img.width/img.height for img, gt in self]) / float(len(self)))
         return fmt_str
