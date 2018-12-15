@@ -53,10 +53,11 @@ def normalized_levenshtein_distance(pred: str, gt: str, w_sub=1, w_del=1, w_ins=
     :param w_ins: weight for insertions
     :return: the normalized levenshtein distance
     """    
-    return 1.0 - (levenshtein_distance(prd, gt, w_sub, w_del, w_ins)/float(np.max(len(pred), len(gt))))
+    ld = levenshtein_distance(pred, gt, w_sub, w_del, w_ins)
+    return np.min(ld, len(gt))/len(gt)
 
 
-def average_nomralized_levenshtein_distance(preds: List[str], gt: List[str]) -> float:
+def average_normalized_levenshtein_distance(preds: List[str], gt: List[str], w_sub=1, w_del=1, w_ins=1) -> float:
     """
     Calculates the average normalized levenshtein distance on a dataset.
     See: http://www.orand.cl/en/icfhr2014-hdsr/#evaluation
@@ -64,7 +65,8 @@ def average_nomralized_levenshtein_distance(preds: List[str], gt: List[str]) -> 
     :param gt: the ground truth in the same order
     :return: the average normalized levenshtein distance
     """
-    raise NotImplementedError()
+    nld = np.sum([levenshtein_distance(pred, target, w_sub, w_del, w_ins) for pred, target in zip(preds, gt)])
+    return nld/len(gt)
 
 
 def recognition_rate(preds: List[List[str]], gt: List[str], top_k=3):
@@ -77,4 +79,12 @@ def recognition_rate(preds: List[List[str]], gt: List[str], top_k=3):
     :param top_k: the number of allowed predictions
     :return: the recognition rate
     """
-    raise NotImplementedError()
+    recog = 0
+
+    for k_preds, target in zip(preds, gt):
+        for pred in k_preds:
+            if pred == target:
+                recog += 1
+                continue
+
+    return recog/float(len(gt))
