@@ -39,7 +39,7 @@ def levenshtein_distance(pred: str, gt: str, w_sub=1, w_del=1, w_ins=1) -> int:
 
                 d[i][j] = min(ins, rem, sub)
 
-    return d[n][m]  
+    return d[n][m]
 
 
 def normalized_levenshtein_distance(pred: str, gt: str, w_sub=1, w_del=1, w_ins=1) -> float:
@@ -53,8 +53,12 @@ def normalized_levenshtein_distance(pred: str, gt: str, w_sub=1, w_del=1, w_ins=
     :param w_ins: weight for insertions
     :return: the normalized levenshtein distance
     """    
+<<<<<<< HEAD
     ld = levenshtein_distance(pred, gt, w_sub, w_del, w_ins)
     return np.min(ld, len(gt))/len(gt)
+=======
+    return 1.0 - (levenshtein_distance(pred, gt, w_sub, w_del, w_ins)/float(np.max(len(pred), len(gt))))
+>>>>>>> e5a471d4974d990ee27d0bd12dd8b33c7f7ad269
 
 
 def average_normalized_levenshtein_distance(preds: List[str], gt: List[str], w_sub=1, w_del=1, w_ins=1) -> float:

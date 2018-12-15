@@ -1,4 +1,5 @@
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
+from torchvision.transforms import Resize
 
 from car_dataset import CAR
 
@@ -9,6 +10,8 @@ def parse_args():
                         help="Path to the root folder of the CAR-{A,B} dataset.")
     parser.add_argument("-e", "--epochs", type=int, default=50, required=False,
                         help="Number of epochs to train the model.")
+    parser.add_argument("--target-size", nargs=2, type=int, default=(100, 300),
+                        help="Y and X size to which the images should be resized.")
     parser.add_argument("-v", "--verbose", action='store_true', default=False, required=False,
                         help="Print more information.")
     return parser.parse_args()
@@ -18,18 +21,21 @@ def build_model():
     pass
 
 
-def train(dataset_root: str, epochs: int, verbose: bool=False):
+def train(args: Namespace, verbose: bool = False):
     # Load dataset
-    dataset = CAR(dataset_root)
+    width, height = args.target_size
+    transform = Resize((width, height))
+    dataset = CAR(args.data, transform=transform)
     if verbose:
         print(dataset)
 
     build_model()
 
     # Train here
-    for epoch in range(epochs):
+    for epoch in range(args.epochs):
         for image, gt in dataset:
             image.show()
+            print("Label: " + gt)
             input("Press enter to show next image..")
 
     # Test here
@@ -37,4 +43,4 @@ def train(dataset_root: str, epochs: int, verbose: bool=False):
 
 if __name__ == "__main__":
     args = parse_args()
-    train(args.data, args.epochs, args.verbose)
+    train(args, args.verbose)
