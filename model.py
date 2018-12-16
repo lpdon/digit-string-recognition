@@ -2,16 +2,20 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class StringNet(nn.Module):
-  def __init__(self, n_classes):
+  def __init__(self, n_classes, seq_length, batch_size):
     """
     In the constructor we instantiate two nn.Linear modules and assign them as
     member variables.
     
-    D_in: input dimension
-    D_out: output dimension
     """
     super(StringNet, self).__init__()
+
+    self.n_classes = n_classes
+    self.seq_length = seq_length
+    self.batch_size = batch_size
+    self.hidden_dim = 100
 
     self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, padding=0)
     self.conv2 = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, padding=0)
@@ -27,7 +31,23 @@ class StringNet(nn.Module):
 
     self.fc1 = nn.Linear(128*9*34, 128) #depend on the flatten output, 
                                         #checked if line 49. Dont know if there is an auto solution
-    self.fc2 = nn.Linear(128, n_classes)
+        
+    self.lstm = nn.LSTM(128, self.hidden_dim)
+
+    self.fc2 = nn.Linear(100, n_classes)
+
+    self.hidden = self.init_hidden()
+
+
+  def init_hidden(self):
+    # The axes semantics are (num_layers, minibatch_size, hidden_dim)
+    if torch.cuda.is_available():
+      return (torch.zeros(1, self.batch_size, self.hidden_dim).cuda(),
+              torch.zeros(1, self.batch_size, self.hidden_dim).cuda())
+    else:
+      return (torch.zeros(1, self.batch_size, self.hidden_dim),
+              torch.zeros(1, self.batch_size, self.hidden_dim))
+
   
   def forward(self, x):
     """
@@ -35,6 +55,8 @@ class StringNet(nn.Module):
     return a Variable of output data. We can use Modules defined in the 
     constructor as well as arbitrary operators on Variables.
     """
+    input_length = len(x)
+
     x = F.relu(self.conv1(x))
     x = F.relu(self.conv2(x))
     x = self.pool1(x)
@@ -51,8 +73,33 @@ class StringNet(nn.Module):
 
     x = x.view(x.size(0), -1) #flatten
     x = F.relu(self.fc1(x))
-    x = self.fc2(x)
+
+    # print(x)
+    x = [x for _ in range(self.seq_length)]
+
+    features = torch.cat(x).view(self.seq_length, self.batch_size, -1)
+    # features = torch.cat(x)
+    # features = x.view(input_length, 1, -1)
+    # out = None
+    # hidden = self.init_hidden()
+
+    # for i in range(10):
+    #   out, hidden = self.lstm(features, hidden)
+
+    # print(features)
+
+    lstm_out, hidden = self.lstm(features, self.init_hidden())
+
+    # print(out)
+    # out = out[-1].view(self.batch_size, -1)
+    x = self.fc2(lstm_out.view(self.seq_length, -1))
 
     x = F.log_softmax(x, dim=1)
+
+    # x = x.view((10 * self.batch_size, -1))
+    x = x.view((self.batch_size, self.seq_length, -1))
+
+    print(x.shape)
+    print(x)
 
     return x

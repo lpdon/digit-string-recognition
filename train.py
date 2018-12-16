@@ -55,8 +55,8 @@ def create_dataloader(args: Namespace, verbose: bool = False):
     return dataloaders_dict
 
 
-def build_model():
-    return StringNet(n_classes=10)
+def build_model(n_classes, seq_length, batch_size):
+    return StringNet(n_classes, seq_length, batch_size)
 
 
 def train(args: Namespace, verbose: bool = False):
@@ -68,7 +68,7 @@ def train(args: Namespace, verbose: bool = False):
     # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     cuda_avail = torch.cuda.is_available()
 
-    model = build_model()
+    model = build_model(11, 10, args.batch_size)
 
     optimizer = torch.optim.Adam(model.parameters(), lr = 0.001)
     floss = nn.NLLLoss()
@@ -89,13 +89,34 @@ def train(args: Namespace, verbose: bool = False):
             image = batch_imgs
             target = batch_targets
 
-            target = [int(i[0]) for i in target]
+            #add padding
+            new_target = []
+            for i, gt in enumerate(target):
+                gt = gt.rstrip()
+                while len(gt) < 10:
+                    gt += ":"
+
+                new_gt = []
+                for j, c in enumerate(gt):
+                    new_gt.append(ord(c) - ord('0'))
+
+                new_target.append(new_gt)
+
+            target = new_target
+            print(target)
+            print(batch_targets)
+            # assert(False)
+
+            # target = [int(i[0]) for i in target]
 
             target = torch.Tensor(target)
             target = target.long()
 
             image = Variable(image)
             target = Variable(target)
+
+            print(target)
+            print(target.shape)
 
             if cuda_avail:
                 image = image.cuda()
@@ -117,37 +138,37 @@ def train(args: Namespace, verbose: bool = False):
         print("Epoch %d: loss: %f | acc: %f" % (epoch + 1, total_loss/num_loss, correct/samples))
 
     # Test here
-    phase = 'test'
-    model.eval()
+    # phase = 'test'
+    # model.eval()
 
-    with torch.no_grad():
-        for batch_imgs, batch_targets in dataloaders[phase]:
-            image = batch_imgs
-            target = batch_targets
+    # with torch.no_grad():
+    #     for batch_imgs, batch_targets in dataloaders[phase]:
+    #         image = batch_imgs
+    #         target = batch_targets
 
-            target = [int(i[0]) for i in target]
+    #         target = [int(i[0]) for i in target]
 
-            target = torch.Tensor(target)
-            target = target.long()
+    #         target = torch.Tensor(target)
+    #         target = target.long()
 
-            image = Variable(image)
-            target = Variable(target)
+    #         image = Variable(image)
+    #         target = Variable(target)
 
-            if cuda_avail:
-                image = image.cuda()
-                target = target.cuda()
+    #         if cuda_avail:
+    #             image = image.cuda()
+    #             target = target.cuda()
 
-            output = model(image)
-            loss = floss(output, target)
+    #         output = model(image)
+    #         loss = floss(output, target)
 
-            total_loss += loss.item()
-            num_loss += 1
+    #         total_loss += loss.item()
+    #         num_loss += 1
 
-            pred = output.max(1, keepdim=True)[1]
-            correct += pred.eq(target.view_as(pred)).sum().item()
-            samples += len(batch_targets)
+    #         pred = output.max(1, keepdim=True)[1]
+    #         correct += pred.eq(target.view_as(pred)).sum().item()
+    #         samples += len(batch_targets)
 
-        print("Test   : loss: %f | acc: %f" % (total_loss/num_loss, correct/samples))
+    #     print("Test   : loss: %f | acc: %f" % (total_loss/num_loss, correct/samples))
 
 
 if __name__ == "__main__":
