@@ -48,11 +48,11 @@ def create_dataloader(args: Namespace, verbose: bool = False):
 
     # Create training and validation dataloaders
     dataloaders_dict = {
-        x: torch.utils.data.DataLoader(dataset.subsets[x],
-                                       batch_size=args.batch_size,
-                                       shuffle=True,
-                                       num_workers=4
-                                       ) for x in ['train', 'test']
+        x: DataLoader(dataset.subsets[x],
+                      batch_size=args.batch_size,
+                      shuffle=True,
+                      num_workers=4
+                      ) for x in ['train', 'test']
     }
     return dataloaders_dict
 
