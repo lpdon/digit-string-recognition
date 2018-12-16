@@ -4,6 +4,8 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 from torchvision.transforms import transforms
+from torch.utils.data import DataLoader
+from torchvision.transforms import transforms
 
 from car_dataset import CAR
 from model import StringNet
@@ -80,10 +82,7 @@ def train(args: Namespace, verbose: bool = False):
     phase = 'train'
     model.train()
     for epoch in range(args.epochs):
-        total_loss = 0
-        num_loss = 0
-        correct = 0
-        samples = 0
+        total_loss = num_loss = correct = samples = 0
 
         for batch_imgs, batch_targets in dataloaders[phase]:
             image = batch_imgs
@@ -121,6 +120,8 @@ def train(args: Namespace, verbose: bool = False):
     model.eval()
 
     with torch.no_grad():
+        # Reset tracked metrics
+        total_loss = num_loss = correct = samples = 0
         for batch_imgs, batch_targets in dataloaders[phase]:
             image = batch_imgs
             target = batch_targets
