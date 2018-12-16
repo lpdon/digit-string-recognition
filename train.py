@@ -109,8 +109,8 @@ def train(args: Namespace, verbose: bool = False):
             total_loss += loss.item()
             num_loss += 1
 
-            pred = output.max(1, keepdim=True)[1]
-            correct += pred.eq(target.view_as(pred)).sum().item()
+            pred = output.argmax(1)
+            correct += pred.eq(target).sum().item()
             samples += len(batch_targets)
 
         print("Epoch %d: loss: %f | acc: %f" % (epoch + 1, total_loss/num_loss, correct/samples))
@@ -144,8 +144,8 @@ def train(args: Namespace, verbose: bool = False):
             total_loss += loss.item()
             num_loss += 1
 
-            pred = output.max(1, keepdim=True)[1]
-            correct += pred.eq(target.view_as(pred)).sum().item()
+            pred = output.argmax(1)
+            correct += pred.eq(target).sum().item()
             samples += len(batch_targets)
 
         print("Test   : loss: %f | acc: %f" % (total_loss/num_loss, correct/samples))
