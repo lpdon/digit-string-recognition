@@ -66,13 +66,12 @@ def train(args: Namespace, verbose: bool = False):
 
     # Detect if we have a GPU available
     # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    cuda_avail = torch.cuda.is_available()
 
     model = build_model()
 
-    optimizer = torch.optim.Adam(model.parameters(), lr = 0.0001)
+    optimizer = torch.optim.Adam(model.parameters(), lr = 0.001)
     floss = nn.NLLLoss()
-
-    cuda_avail = torch.cuda.is_available()
 
     if cuda_avail:
         model.cuda()
@@ -87,32 +86,33 @@ def train(args: Namespace, verbose: bool = False):
         samples = 0
 
         for batch_imgs, batch_targets in dataloaders[phase]:
-            for image, target in zip(batch_imgs, batch_targets):
-                image = image.unsqueeze(0)
-                target = int(target[0])
+            image = batch_imgs
+            target = batch_targets
 
-                target = torch.Tensor([target])
-                target = target.long()
+            target = [int(i[0]) for i in target]
 
-                image = Variable(image)
-                target = Variable(target)
+            target = torch.Tensor(target)
+            target = target.long()
 
-                if cuda_avail:
-                    image = image.cuda()
-                    target = target.cuda()
+            image = Variable(image)
+            target = Variable(target)
 
-                optimizer.zero_grad()
-                output = model(image)
-                loss = floss(output, target)
-                loss.backward()
-                optimizer.step()
+            if cuda_avail:
+                image = image.cuda()
+                target = target.cuda()
 
-                total_loss += loss.item()
-                num_loss += 1
+            optimizer.zero_grad()
+            output = model(image)
+            loss = floss(output, target)
+            loss.backward()
+            optimizer.step()
 
-                pred = output.max(1, keepdim=True)[1]
-                correct += pred.eq(target.view_as(pred)).sum().item()
-                samples += 1
+            total_loss += loss.item()
+            num_loss += 1
+
+            pred = output.max(1, keepdim=True)[1]
+            correct += pred.eq(target.view_as(pred)).sum().item()
+            samples += len(batch_targets)
 
         print("Epoch %d: loss: %f | acc: %f" % (epoch + 1, total_loss/num_loss, correct/samples))
 
@@ -122,29 +122,30 @@ def train(args: Namespace, verbose: bool = False):
 
     with torch.no_grad():
         for batch_imgs, batch_targets in dataloaders[phase]:
-            for image, target in zip(batch_imgs, batch_targets):
-                image = image.unsqueeze(0)
-                target = int(target[0])
+            image = batch_imgs
+            target = batch_targets
 
-                target = torch.Tensor([target])
-                target = target.long()
+            target = [int(i[0]) for i in target]
 
-                image = Variable(image)
-                target = Variable(target)
+            target = torch.Tensor(target)
+            target = target.long()
 
-                if cuda_avail:
-                    image = image.cuda()
-                    target = target.cuda()
+            image = Variable(image)
+            target = Variable(target)
 
-                output = model(image)
-                loss = floss(output, target)
+            if cuda_avail:
+                image = image.cuda()
+                target = target.cuda()
 
-                total_loss += loss.item()
-                num_loss += 1
+            output = model(image)
+            loss = floss(output, target)
 
-                pred = output.max(1, keepdim=True)[1]
-                correct += pred.eq(target.view_as(pred)).sum().item()
-                samples += 1
+            total_loss += loss.item()
+            num_loss += 1
+
+            pred = output.max(1, keepdim=True)[1]
+            correct += pred.eq(target.view_as(pred)).sum().item()
+            samples += len(batch_targets)
 
         print("Test   : loss: %f | acc: %f" % (total_loss/num_loss, correct/samples))
 
