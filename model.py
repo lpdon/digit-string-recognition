@@ -29,24 +29,22 @@ class StringNet(nn.Module):
     self.conv6 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=0)
     self.pool3 = nn.MaxPool2d(2)
 
-    self.fc1 = nn.Linear(128*9*34, 128) #depend on the flatten output, 
+    self.fc1 = nn.Linear(128*9*34, 128*seq_length) #depend on the flatten output, 
                                         #checked if line 49. Dont know if there is an auto solution
         
-    self.lstm = nn.LSTM(128, self.hidden_dim)
+    self.lstm = nn.LSTM(128*seq_length, self.hidden_dim)
 
-    self.fc2 = nn.Linear(100, n_classes)
-
-    self.hidden = self.init_hidden()
+    self.fc2 = nn.Linear(self.hidden_dim, n_classes)
 
 
-  def init_hidden(self):
+  def init_hidden(self, input_length):
     # The axes semantics are (num_layers, minibatch_size, hidden_dim)
     if torch.cuda.is_available():
-      return (torch.zeros(1, self.batch_size, self.hidden_dim).cuda(),
-              torch.zeros(1, self.batch_size, self.hidden_dim).cuda())
+      return (torch.zeros(1, input_length, self.hidden_dim).cuda(),
+              torch.zeros(1, input_length, self.hidden_dim).cuda())
     else:
-      return (torch.zeros(1, self.batch_size, self.hidden_dim),
-              torch.zeros(1, self.batch_size, self.hidden_dim))
+      return (torch.zeros(1, input_length, self.hidden_dim),
+              torch.zeros(1, input_length, self.hidden_dim))
 
   
   def forward(self, x):
@@ -74,32 +72,14 @@ class StringNet(nn.Module):
     x = x.view(x.size(0), -1) #flatten
     x = F.relu(self.fc1(x))
 
-    # print(x)
     x = [x for _ in range(self.seq_length)]
 
-    features = torch.cat(x).view(self.seq_length, self.batch_size, -1)
-    # features = torch.cat(x)
-    # features = x.view(input_length, 1, -1)
-    # out = None
-    # hidden = self.init_hidden()
+    features = torch.cat(x).view(self.seq_length, input_length, -1)
+    lstm_out, hidden = self.lstm(features, self.init_hidden(input_length))
 
-    # for i in range(10):
-    #   out, hidden = self.lstm(features, hidden)
-
-    # print(features)
-
-    lstm_out, hidden = self.lstm(features, self.init_hidden())
-
-    # print(out)
-    # out = out[-1].view(self.batch_size, -1)
-    x = self.fc2(lstm_out.view(self.seq_length, -1))
-
+    x = self.fc2(lstm_out.view(input_length, self.seq_length, -1))
     x = F.log_softmax(x, dim=1)
 
-    # x = x.view((10 * self.batch_size, -1))
-    x = x.view((self.batch_size, self.seq_length, -1))
-
-    print(x.shape)
-    print(x)
+    x = x.view((input_length * self.seq_length, -1))
 
     return x

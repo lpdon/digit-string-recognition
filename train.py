@@ -5,6 +5,8 @@ import torch.nn as nn
 from torch.autograd import Variable
 from torchvision.transforms import Resize, transforms
 
+import numpy as np
+
 from car_dataset import CAR
 from model import StringNet
 
@@ -68,9 +70,10 @@ def train(args: Namespace, verbose: bool = False):
     # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     cuda_avail = torch.cuda.is_available()
 
-    model = build_model(11, 10, args.batch_size)
+    seq_length = 10
+    model = build_model(11, seq_length, args.batch_size)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr = 0.001)
+    optimizer = torch.optim.Adam(model.parameters(), lr = 0.01)
     floss = nn.NLLLoss()
 
     if cuda_avail:
@@ -85,6 +88,9 @@ def train(args: Namespace, verbose: bool = False):
         correct = 0
         samples = 0
 
+        dummy_images = None
+        dummy_targets = None
+
         for batch_imgs, batch_targets in dataloaders[phase]:
             image = batch_imgs
             target = batch_targets
@@ -93,7 +99,7 @@ def train(args: Namespace, verbose: bool = False):
             new_target = []
             for i, gt in enumerate(target):
                 gt = gt.rstrip()
-                while len(gt) < 10:
+                while len(gt) < seq_length:
                     gt += ":"
 
                 new_gt = []
@@ -103,11 +109,6 @@ def train(args: Namespace, verbose: bool = False):
                 new_target.append(new_gt)
 
             target = new_target
-            print(target)
-            print(batch_targets)
-            # assert(False)
-
-            # target = [int(i[0]) for i in target]
 
             target = torch.Tensor(target)
             target = target.long()
@@ -115,8 +116,7 @@ def train(args: Namespace, verbose: bool = False):
             image = Variable(image)
             target = Variable(target)
 
-            print(target)
-            print(target.shape)
+            target = target.view((len(batch_targets)*seq_length))
 
             if cuda_avail:
                 image = image.cuda()
@@ -132,10 +132,18 @@ def train(args: Namespace, verbose: bool = False):
             num_loss += 1
 
             pred = output.max(1, keepdim=True)[1]
+
+            # print(pred)
+            # print(target)
+
             correct += pred.eq(target.view_as(pred)).sum().item()
-            samples += len(batch_targets)
+            samples += len(batch_targets)*seq_length
+
+            dummy_images = image
+            dummy_targets = target
 
         print("Epoch %d: loss: %f | acc: %f" % (epoch + 1, total_loss/num_loss, correct/samples))
+        # print(model(dummy_images).max(1, keepdim=True)[1], dummy_targets)
 
     # Test here
     # phase = 'test'
