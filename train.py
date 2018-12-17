@@ -3,7 +3,7 @@ from argparse import ArgumentParser, Namespace
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
-from torchvision.transforms import Resize, transforms
+from torchvision.transforms import transforms
 
 from car_dataset import CAR
 from model import StringNet
@@ -70,7 +70,7 @@ def train(args: Namespace, verbose: bool = False):
 
     model = build_model()
 
-    optimizer = torch.optim.Adam(model.parameters(), lr = 0.001)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
     floss = nn.NLLLoss()
 
     if cuda_avail:
@@ -81,7 +81,7 @@ def train(args: Namespace, verbose: bool = False):
     model.train()
     for epoch in range(args.epochs):
         total_loss = 0
-        num_loss = 0        
+        num_loss = 0
         correct = 0
         samples = 0
 
