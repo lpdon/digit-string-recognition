@@ -19,15 +19,17 @@ def parse_args():
                         help="Path to the root folder of the CAR-{A,B} dataset.")
     parser.add_argument("-e", "--epochs", type=int, default=50,
                         help="Number of epochs to train the model.")
-    parser.add_argument("--target-size", nargs=2, type=int, default=(100, 300),
+    parser.add_argument("--target-size", "--is", nargs=2, type=int, default=(100, 300),
                         help="Y and X size to which the images should be resized.")
-    parser.add_argument("--batch-size", type=int, default=4,
+    parser.add_argument("--batch-size", "--bs", type=int, default=4,
                         help="Batch size for training and testing.")
-    parser.add_argument("--train-val-split", type=float, default=0.8,
+    parser.add_argument("--train-val-split", "--val", type=float, default=0.8,
                         help="The ratio of the training data which is used for actual training. "
                              "The rest (1-ratio) is used for validation (development test set)")
     parser.add_argument("--seed", type=int, default=666,
                         help="Seed used for the random number generator.")
+    parser.add_argument("--lr", "--learning-rate", type=float, default=1e-4,
+                        help="The initial learning rate.")
     parser.add_argument("-v", "--verbose", action='store_true', default=False, required=False,
                         help="Print more information.")
     return parser.parse_args()
@@ -49,7 +51,7 @@ def create_dataloader(args: Namespace, verbose: bool = False) -> Dict[str, DataL
     }
 
     # Load dataset
-    dataset = CAR(args.data, transform=data_transforms)
+    dataset = CAR(args.data, transform=data_transforms, train_val_split=args.train_val_split)
     if verbose:
         print(dataset)
 
@@ -64,7 +66,7 @@ def create_dataloader(args: Namespace, verbose: bool = False) -> Dict[str, DataL
     return dataloaders_dict
 
 
-def build_model():
+def build_model() -> nn.Module:
     return StringNet(n_classes=10)
 
 
@@ -92,7 +94,7 @@ def train(args: Namespace, verbose: bool = False):
 
     model = build_model()
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     floss = nn.NLLLoss()
 
     if cuda_avail:
@@ -134,7 +136,8 @@ def train(args: Namespace, verbose: bool = False):
             samples += len(batch_targets)
 
         val_results = test(model, dataloaders['val'])
-        print(f"Epoch {epoch + 1}: loss: {total_loss / num_loss:8.6} | train_acc: {correct / samples:6.4} | "
+        print(
+            f"Epoch {epoch + 1:2}: loss: {round(total_loss / num_loss, 6):8.6} | train_acc: {correct / samples:6.4} | "
               f"val_acc: {val_results['accuracy']:6.4}")
 
     # Test here
