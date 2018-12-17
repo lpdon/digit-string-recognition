@@ -1,9 +1,11 @@
 from argparse import ArgumentParser, Namespace
+from typing import Dict
 
+import numpy as np
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
-from torchvision.transforms import transforms
+from torch.backends import cudnn
 from torch.utils.data import DataLoader
 from torchvision.transforms import transforms
 
@@ -15,18 +17,20 @@ def parse_args():
     parser = ArgumentParser("Training script for Digit String Recognition PyTorch-Model.")
     parser.add_argument("-d", "--data", type=str, required=True,
                         help="Path to the root folder of the CAR-{A,B} dataset.")
-    parser.add_argument("-e", "--epochs", type=int, default=50, required=False,
+    parser.add_argument("-e", "--epochs", type=int, default=50,
                         help="Number of epochs to train the model.")
     parser.add_argument("--target-size", nargs=2, type=int, default=(100, 300),
                         help="Y and X size to which the images should be resized.")
     parser.add_argument("--batch-size", type=int, default=4,
                         help="Batch size for training and testing.")
+    parser.add_argument("--seed", type=int, default=666,
+                        help="Seed used for the random number generator.")
     parser.add_argument("-v", "--verbose", action='store_true', default=False, required=False,
                         help="Print more information.")
     return parser.parse_args()
 
 
-def create_dataloader(args: Namespace, verbose: bool = False):
+def create_dataloader(args: Namespace, verbose: bool = False) -> Dict[str, DataLoader]:
     # Data augmentation and normalization for training
     # Just normalization for validation
     width, height = args.target_size
@@ -61,8 +65,21 @@ def build_model():
     return StringNet(n_classes=10)
 
 
+def set_seed(seed: int) -> None:
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    # Detect if we have a GPU available
+    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    if torch.cuda.is_available():
+        cudnn.deterministic = True
+        cudnn.benchmark = False
+        torch.cuda.manual_seed_all(seed)
+
+
 def train(args: Namespace, verbose: bool = False):
-    # Load dataset
+    set_seed(args.seed)
+
     # Load dataset and create data loaders
     dataloaders = create_dataloader(args, verbose)
 
