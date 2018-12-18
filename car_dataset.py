@@ -6,6 +6,7 @@ from warnings import warn
 import numpy as np
 import torch.utils.data as data
 from PIL import Image
+from sklearn.model_selection import train_test_split
 from torch.utils.data import Subset, Dataset
 
 
@@ -17,14 +18,9 @@ def train_val_datasets(dataset: Dataset, val_split: float = 0.5, shuffle: bool =
     :param shuffle: shuffle the indices
     :return: two data subsets which (train, val)
     """
-    num_train = len(dataset)
-    indices = list(range(num_train))
-    split = int(np.floor(val_split * num_train))
+    train_idx, valid_idx = train_test_split(np.arange(len(dataset)), test_size=1 - val_split,
+                                            train_size=val_split, shuffle=shuffle)
 
-    if shuffle:
-        np.random.shuffle(indices)
-
-    train_idx, valid_idx = indices[:split], indices[split:]
     train_dataset = Subset(dataset, train_idx)
     val_dataset = Subset(dataset, valid_idx)
     return train_dataset, val_dataset
