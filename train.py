@@ -15,6 +15,7 @@ from torchvision.transforms import transforms
 from car_dataset import CAR
 from model import StringNet
 from util import concat, length_tensor
+from timer import Timer
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -156,12 +157,19 @@ def train(args: Namespace, seed: int = 0, verbose: bool = False) -> Dict[str, An
 
     # Train here
     phase = 'train'
+    batch_timer = Timer()
+    epoch_timer = Timer()
+    total_batches = len(dataloaders[phase])
     for epoch in range(args.epochs):
+        model.train()
+        epoch_timer.start()
+        batch_timer.reset()
+
         total_loss = num_samples = total_distance = 0
         dummy_images = dummy_batch_targets = None
-        model.train()
 
-        for image, str_targets in dataloaders[phase]:
+        for batch_num, (image, str_targets) in enumerate(dataloaders[phase]):
+            batch_timer.start()
             # string to individual ints
             int_targets = [[int(c) for c in gt] for gt in str_targets]
 
@@ -189,15 +197,21 @@ def train(args: Namespace, seed: int = 0, verbose: bool = False) -> Dict[str, An
                 dummy_images = image
                 dummy_batch_targets = str_targets
 
+            batch_timer.stop()
+            if batch_num % 10 == 0:
+                print(batch_timer.format_status(num_total=total_batches - batch_num) + 20 * " ", end='\r', flush=True)
+
+        epoch_timer.stop()
         if verbose:
             print("Train examples: ")
             print(model(dummy_images).argmax(2)[:, :10], dummy_batch_targets[:10])
 
         val_results = test(model, dataloaders['val'], verbose)
-        print("Epoch {}: loss: {} | avg_dist: {} "
+        print("Epoch {}: loss: {} | avg_dist: {} | time {}s "
               "| val_dist: {} | val_loss: {}".format(epoch + 1,
                                                      round(total_loss / num_samples, 6),
                                                      round(total_distance / num_samples, 6),
+                                                     int(epoch_timer.last()),
                                                      round(val_results['average_distance'], 6),
                                                      round(val_results['loss'], 6)))
 
@@ -205,6 +219,7 @@ def train(args: Namespace, seed: int = 0, verbose: bool = False) -> Dict[str, An
     test_results = test(model, dataloaders['test'], verbose)
     print("Test   : test_dist:  {} | test_loss: {}".format(test_results['average_distance'],
                                                            test_results['loss']))
+    test_results["total_training_time"] = epoch_timer.total()
     return test_results
 
 
