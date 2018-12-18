@@ -33,7 +33,7 @@ def create_parser():
     parser.add_argument("--train-val-split", "--val", type=float, default=0.8,
                         help="The ratio of the training data which is used for actual training. "
                              "The rest (1-ratio) is used for validation (development test set)")
-    parser.add_argument("--seed", type=int, default=666,
+    parser.add_argument("--seed", type=int, nargs='+', default=[666, ],
                         help="Seed used for the random number generator.")
     parser.add_argument("--lr", "--learning-rate", type=float, default=1e-4,
                         help="The initial learning rate.")
@@ -142,8 +142,8 @@ def calc_lv_dist(output, targets: List[str]):
     return distances
 
 
-def train(args: Namespace, verbose: bool = False):
-    set_seed(args.seed)
+def train(args: Namespace, seed: int = 0, verbose: bool = False) -> Dict[str, Any]:
+    set_seed(seed)
 
     # Load dataset and create data loaders
     dataloaders = create_dataloader(args, verbose)
@@ -206,6 +206,7 @@ def train(args: Namespace, verbose: bool = False):
     test_results = test(model, dataloaders['test'], verbose)
     print("Test   : test_dist:  {} | test_loss: {}".format(test_results['average_distance'],
                                                            test_results['loss']))
+    return test_results
 
 
 def test(model: nn.Module, dataloader: DataLoader, verbose: bool = False) -> Dict[str, Any]:
@@ -244,4 +245,19 @@ def test(model: nn.Module, dataloader: DataLoader, verbose: bool = False) -> Dic
 
 if __name__ == "__main__":
     args = parse_args()
-    train(args, args.verbose)
+    if len(args.seed) == 1:
+        train(args, seed=args.seed[0], verbose=args.verbose)
+    else:
+        # Get the results for every seed
+        results = [train(args, seed=seed, verbose=args.verbose) for seed in args.seed]
+        # Create dictionary to get a mapping from metric_name -> array of results of that metric
+        # e.g. { 'accuracy': [0.67, 0.68] }
+        metrics = next(iter(results)).keys()
+        results = {key: np.asarray([result[key] for result in results]) for key in metrics}
+        print(results)
+        for key, values in results.items():
+            avg = np.average(values)
+            var = sum(np.abs(values - avg)) / len(values)
+            print(key + ": ")
+            print(f"\t Average:  {avg:.6}")
+            print(f"\t STD:      {var:.6}")
