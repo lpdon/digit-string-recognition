@@ -1,6 +1,8 @@
 from argparse import ArgumentParser, Namespace
+from itertools import groupby
 from typing import Dict, Any
 
+import Levenshtein as lv
 import numpy as np
 import torch
 import torch.nn as nn
@@ -8,8 +10,6 @@ from torch.autograd import Variable
 from torch.backends import cudnn
 from torch.utils.data import DataLoader
 from torchvision.transforms import transforms
-
-import numpy as np
 
 from car_dataset import CAR
 from model import StringNet
@@ -71,7 +71,7 @@ def create_dataloader(args: Namespace, verbose: bool = False) -> Dict[str, DataL
     return dataloaders_dict
 
 
-def build_model(n_classes, seq_length, batch_size):
+def build_model(n_classes: int, seq_length: int, batch_size: int) -> nn.Module:
     return StringNet(n_classes, seq_length, batch_size)
 
 
@@ -106,10 +106,10 @@ def train(args: Namespace, verbose: bool = False):
 
     # Train here
     phase = 'train'
-    model.train()
     for epoch in range(args.epochs):
         total_loss = num_loss = correct = samples = 0
-        dummy_images = dummy_targets = None
+        dummy_images = dummy_batch_targets = None
+        model.train()
 
         for batch_imgs, batch_targets in dataloaders[phase]:
             image = batch_imgs
@@ -127,7 +127,7 @@ def train(args: Namespace, verbose: bool = False):
             image = Variable(image)
             target = Variable(target)
 
-            target = target.view((-1, ))
+            target = target.view((-1,))
 
             image = image.to(device)
             target = target.to(device)
@@ -151,43 +151,46 @@ def train(args: Namespace, verbose: bool = False):
             samples += len(batch_targets)*seq_length
 
             dummy_images = image
-            dummy_targets = batch_targets
+            dummy_batch_targets = batch_targets
 
-        print("Epoch %d: loss: %f | acc: %f" % (epoch + 1, total_loss/num_loss, correct/samples))
-        print(model(dummy_images).argmax(2), dummy_targets)
+        val_results = test(model, dataloaders['val'])
+        print(f"Epoch {epoch + 1:2}: loss: {round(total_loss / num_loss, 6):8.6} |"
+              f" val_dist: {val_results['average_distance']:6.4}")
+
+        print(model(dummy_images).argmax(2)[:, :10], dummy_batch_targets[:10])
 
     # Test here
-    # phase = 'test'
-    # model.eval()
+    test_results = test(model, dataloaders['test'])
+    print(f"Test   : test_dist:  {test_results['average_distance']:6.4}")
 
-    # with torch.no_grad():
-    #     for batch_imgs, batch_targets in dataloaders[phase]:
-    #         image = batch_imgs
-    #         target = batch_targets
 
-    #         target = [int(i[0]) for i in target]
+def test(model: nn.Module, dataloader: DataLoader) -> Dict[str, Any]:
+    model.eval()
+    with torch.no_grad():
+        # Reset tracked metrics
+        total_distance = samples = 0
+        for batch_imgs, batch_targets in dataloader:
+            image = batch_imgs
+            image = Variable(image)
 
-    #         target = torch.Tensor(target)
-    #         target = target.long()
+            if torch.cuda.is_available():
+                image = image.cuda()
 
-    #         image = Variable(image)
-    #         target = Variable(target)
+            output: torch.Tensor = model(image)
 
-    #         if cuda_avail:
-    #             image = image.cuda()
-    #             target = target.cuda()
-
-    #         output = model(image)
-    #         loss = floss(output, target)
-
-    #         total_loss += loss.item()
-    #         num_loss += 1
-
-    #         pred = output.max(1, keepdim=True)[1]
-    #         correct += pred.eq(target.view_as(pred)).sum().item()
-    #         samples += len(batch_targets)
-
-    #     print("Test   : loss: %f | acc: %f" % (total_loss/num_loss, correct/samples))
+            preds = output.argmax(2)
+            preds = preds.transpose(0, 1)
+            for pred, gt in zip(preds, batch_targets):
+                pred_str = [x[0] for x in groupby(pred)]
+                pred_str = [str(int(p)) for p in pred_str if p != 10]
+                pred_str = ''.join(pred_str)
+                if total_distance == 0:
+                    print(pred_str)
+                    print(gt.rstrip())
+                distance = lv.distance(pred_str, gt.rstrip())
+                total_distance += distance
+                samples += 1
+    return {'average_distance': total_distance / samples}
 
 
 if __name__ == "__main__":

@@ -1,8 +1,9 @@
-from typing import List
+from typing import List, Any
+
 import numpy as np
 
 
-def levenshtein_distance(pred: str, gt: str, w_sub=1, w_del=1, w_ins=1) -> int:
+def levenshtein_distance(pred: List[Any], gt: List[Any], w_sub=1, w_del=1, w_ins=1) -> int:
     """
     Calculates the levenshtein distance between two words.
     See: http://www.orand.cl/en/icfhr2014-hdsr/#evaluation
@@ -52,7 +53,7 @@ def normalized_levenshtein_distance(pred: str, gt: str, w_sub=1, w_del=1, w_ins=
     :param w_del: weight for deletions
     :param w_ins: weight for insertions
     :return: the normalized levenshtein distance
-    """    
+    """
     ld = levenshtein_distance(pred, gt, w_sub, w_del, w_ins)
     return np.min(ld, len(gt))/len(gt)
 
@@ -71,7 +72,7 @@ def average_normalized_levenshtein_distance(preds: List[str], gt: List[str], w_s
 
 def recognition_rate(preds: List[List[str]], gt: List[str], top_k=3):
     """
-    Calculates the recognition rate given the top k predictions 
+    Calculates the recognition rate given the top k predictions
     for each datapoint and the ground truth.
     See: http://www.orand.cl/en/icfhr2014-hdsr/#evaluation
     :param preds: the predictions as a list of lists (of length top_k) of strings
