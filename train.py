@@ -143,7 +143,7 @@ def train(args: Namespace, verbose: bool = False):
             dummy_targets = target
 
         print("Epoch %d: loss: %f | acc: %f" % (epoch + 1, total_loss/num_loss, correct/samples))
-        # print(model(dummy_images).max(1, keepdim=True)[1], dummy_targets)
+        print(model(dummy_images).max(1, keepdim=True)[1], dummy_targets)
 
     # Test here
     # phase = 'test'
