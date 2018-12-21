@@ -72,14 +72,37 @@ class StringNet(nn.Module):
     x = x.view(x.size(0), -1) #flatten
     x = F.relu(self.fc1(x))
 
-    x = [x for _ in range(self.seq_length)]
+    current_batch_size = x.shape[0]
 
-    features = torch.cat(x).view(self.seq_length, input_length, -1)
-    lstm_out, hidden = self.lstm(features, self.init_hidden(input_length))
+    # x = [x for _ in range(self.seq_length)]
+    x = [x]
+    features = torch.cat(x).view(1, input_length, -1)
+    # features = x
+    # lstm_out, hidden = self.lstm(features, self.init_hidden(input_length))
 
-    x = self.fc2(lstm_out.view(input_length, self.seq_length, -1))
-    x = F.log_softmax(x, dim=1)
+    # x = self.fc2(lstm_out.view(input_length, self.seq_length, -1))
+    # x = F.log_softmax(x, dim=1)
 
-    x = x.view((input_length * self.seq_length, -1))
+    # h_t, c_t = self.init_hidden(input_length)
 
-    return x
+    hidden = self.init_hidden(input_length)
+
+    outs = torch.zeros(self.seq_length, current_batch_size, self.n_classes).cuda()
+    # print(outs.shape)
+    for t in range(self.seq_length):
+      # print(h_t.shape, c_t.shape)
+      # print("porra: ", h_t.shape, c_t.shape)
+      # h_t, c_t = self.lstm(features, (h_t, c_t))
+      out, hidden = self.lstm(features, hidden)
+      # print("caralho: ", h_t.shape, c_t.shape)
+      # o_t = self.softmax(self.to_num(h_t))
+      o_t = self.fc2(out)
+      o_t = F.log_softmax(o_t, dim=1)
+      # print(o_t.shape)
+      outs[t, :, :] = o_t
+      i_t = o_t
+
+    # print("apiowsaorfisnero")
+    # x = x.view((input_length * self.seq_length, -1))
+
+    return outs

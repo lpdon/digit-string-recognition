@@ -74,7 +74,8 @@ def train(args: Namespace, verbose: bool = False):
     model = build_model(11, seq_length, args.batch_size)
 
     optimizer = torch.optim.Adam(model.parameters(), lr = 0.01)
-    floss = nn.NLLLoss()
+    # floss = nn.NLLLoss()
+    floss = nn.CTCLoss(blank=10, reduction="mean")
 
     if cuda_avail:
         model.cuda()
@@ -96,27 +97,28 @@ def train(args: Namespace, verbose: bool = False):
             target = batch_targets
 
             #add padding
+            padding = False
             new_target = []
             for i, gt in enumerate(target):
                 gt = gt.rstrip()
-                while len(gt) < seq_length:
-                    gt += ":"
+                if padding:
+                    while len(gt) < seq_length:
+                        gt += ":"
 
                 new_gt = []
                 for j, c in enumerate(gt):
+                    if j == 2:
+                        break
                     new_gt.append(ord(c) - ord('0'))
+                new_target += new_gt
 
-                new_target.append(new_gt)
-
-            target = new_target
-
-            target = torch.Tensor(target)
+            target = torch.Tensor(new_target)
             target = target.long()
 
             image = Variable(image)
             target = Variable(target)
 
-            target = target.view((len(batch_targets)*seq_length))
+            # target = target.view((len(batch_targets)*seq_length))
 
             if cuda_avail:
                 image = image.cuda()
@@ -124,7 +126,12 @@ def train(args: Namespace, verbose: bool = False):
 
             optimizer.zero_grad()
             output = model(image)
-            loss = floss(output, target)
+            # print(output.shape)
+            input_lengths = torch.full((output.shape[1],), output.shape[0], dtype=torch.long)
+            target_lengths = torch.Tensor([min(2, len(t.rstrip())) for t in batch_targets]).type(torch.long).cuda()
+            # print(input_lengths, target_lengths)
+            loss = floss(output, target, input_lengths, target_lengths)
+            # print(loss)
             loss.backward()
             optimizer.step()
 
@@ -136,7 +143,7 @@ def train(args: Namespace, verbose: bool = False):
             # print(pred)
             # print(target)
 
-            correct += pred.eq(target.view_as(pred)).sum().item()
+            # correct += pred.eq(target.view_as(pred)).sum().item()
             samples += len(batch_targets)*seq_length
 
             dummy_images = image
