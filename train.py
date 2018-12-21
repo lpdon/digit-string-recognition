@@ -11,7 +11,7 @@ from torchvision.transforms import transforms
 
 from car_dataset import CAR
 from model import StringNet
-
+from CTCLoss import *
 
 def parse_args():
     parser = ArgumentParser("Training script for Digit String Recognition PyTorch-Model.")
@@ -67,7 +67,7 @@ def create_dataloader(args: Namespace, verbose: bool = False) -> Dict[str, DataL
 
 
 def build_model() -> nn.Module:
-    return StringNet(n_classes=10)
+    return StringNet(n_classes=11)
 
 
 def set_seed(seed: int) -> None:
@@ -95,7 +95,7 @@ def train(args: Namespace, verbose: bool = False):
     model = build_model()
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-    floss = nn.NLLLoss()
+    floss = nn.CTCLoss()
 
     if cuda_avail:
         model.cuda()
@@ -103,15 +103,28 @@ def train(args: Namespace, verbose: bool = False):
     # Train here
     phase = 'train'
     model.train()
+    
+ 
+   
+    
     for epoch in range(args.epochs):
         total_loss = num_loss = correct = samples = 0
-
+        counter = 0
         for batch_imgs, batch_targets in dataloaders[phase]:
+            
+            model.zero_grad()
+            model.hidden = model.reset_hidden(1)
+            model.reset_cell(1)
+            
             image = batch_imgs
             target = batch_targets
+            #print("batch targets: " + str(target))
 
-            target = [int(i[0]) for i in target]
+            
+            target = [int(i) for i in target[0].strip()]
+            
 
+            #print("target: " + str(target))
             target = torch.Tensor(target)
             target = target.long()
 
@@ -122,19 +135,59 @@ def train(args: Namespace, verbose: bool = False):
                 image = image.cuda()
                 target = target.cuda()
 
-            optimizer.zero_grad()
+           # optimizer.zero_grad()
+            
             output = model(image)
-            loss = floss(output, target)
+
+          
+            #Tensor of size (T, N, C) where C = number of characters in alphabet including blank
+            output = output.view(output.size()[0], 1, 11)
+           # print("output after reshape:", output.size())
+            
+            #targets: Tensor of size (N, S) or (sum(target_lengths))
+            target = target.view(len(batch_targets), target.size()[0])
+           # print("target after reshape:", target.size())
+            
+            #input_lengths: Tuple or tensor of size (N)
+            input_lengths  = torch.tensor([output.size()[1]])
+            input_lengths[0] = output.size()[0]
+           # print("input_lengths:", input_lengths)
+            
+            #target_lengths: Tuple or tensor of size (N)
+            target_lengths = torch.tensor([target.size()[1]])
+            target_lengths[0] = target.size()[1]
+           # print("target_lengths:", target_lengths.size())
+ 
+            pred = output.argmax(2).squeeze()
+            
+           
+       
+            #out_np = output.data.numpy()
+            #predictions = floss.decode_best_path(out_np)
+            #print ("best_path_predictions[0]: " + str(out_np))
+            
+            
+            
+            loss = floss(output, target, input_lengths, target_lengths)
+            
+            if (counter % 20 == 0):
+               print("gt size: " +str(target.size()) + ", value: " + str(target))
+               print("pred size: " +str (pred.size()) + ", value: " + str(pred))
+               print("loss: ", loss.item())
+         
             loss.backward()
             optimizer.step()
 
             total_loss += loss.item()
             num_loss += 1
 
-            pred = output.argmax(1)
-            correct += pred.eq(target).sum().item()
+           
+           # correct += pred.eq(target).sum().item()
             samples += len(batch_targets)
-
+            
+            counter += 1
+            
+            
         val_results = test(model, dataloaders['val'])
         print(
             f"Epoch {epoch + 1:2}: loss: {round(total_loss / num_loss, 6):8.6} | train_acc: {correct / samples:6.4} | "
