@@ -1,13 +1,29 @@
+import os
+import os.path
 from typing import Tuple, List, Dict
 from warnings import warn
 
+import numpy as np
 import torch.utils.data as data
-from torch.utils.data import Subset
-
 from PIL import Image
+from sklearn.model_selection import train_test_split
+from torch.utils.data import Subset, Dataset
 
-import os
-import os.path
+
+def train_val_datasets(dataset: Dataset, val_split: float = 0.5, shuffle: bool = True) -> Tuple[Dataset, Dataset]:
+    """
+    Splits dataset at specified ratio. E.g. to create train-val split.
+    :param dataset: the source dataset
+    :param val_split: the ratio of samples which should be training samples
+    :param shuffle: shuffle the indices
+    :return: two data subsets which (train, val)
+    """
+    train_idx, valid_idx = train_test_split(np.arange(len(dataset)), test_size=1 - val_split,
+                                            train_size=val_split, shuffle=shuffle)
+
+    train_dataset = Subset(dataset, train_idx)
+    val_dataset = Subset(dataset, valid_idx)
+    return train_dataset, val_dataset
 
 
 def pil_loader(path):
@@ -93,6 +109,7 @@ class TransformSubset(data.Subset):
         transform (callable): Function which transforms input
         target_transform (callable): Function which transforms target
     """
+
     def __init__(self, dataset, indices, transform=None, target_transform=None):
         super(TransformSubset, self).__init__(dataset, indices)
         self.transform = transform
@@ -126,27 +143,33 @@ class CAR(data.Dataset):
     Args:
         root (string): Root directory path.
         loader (callable): A function to load a sample given its path.
-        transform (Dict[str, callable], optional): 
+        transform (Dict[str, callable], optional):
             A dict from subset_names to functions which transform the input images.
-        target_transform (callable, optional): 
+        target_transform (callable, optional):
             A function/transform that takes in a target and returns a transformed version.
         subset_name_map ('auto' or dict[str, str] or None):
             Either a dict which maps the folder to some chosen subset names (e.g. train, test).
-            If 'auto' it will be checked if {train, test} is a substring 
+            If 'auto' it will be checked if {train, test} is a substring
             of the subset name and will then be used. Subset names not matching this pattern are not touched.
               e.g: a_train -> train
             'auto' works for the standard CAR-A and CAR-B datasets.
             If None is given the subset names are not changed.
+        train_val_split (float): Ratio at which to perform train_val_split.
+            Must be greater 0 and smaller or equal than 1
+            If equal to 1, no split is done.
+            If unequal 1, a subset with name 'train' must exist after mapping.
+            If it exists, two subsets 'train' and 'val' will be added to this subset.
+            'train' subset is overridden.
 
      Attributes:
         samples (list): List of (sample path, subset_index) tuples
     """
 
     def __init__(self, root, loader=default_loader, transform=None, target_transform=None,
-                 subset_name_map='auto'):
+                 subset_name_map='auto', train_val_split: float = 0.8):
         samples, subset_to_idx = discover_dataset(root)
         if len(samples) == 0:
-            raise(RuntimeError("Found 0 files in subfolders of: " + root))
+            raise (RuntimeError("Found 0 files in subfolders of: " + root))
 
         self.root = root
         self.loader = loader
@@ -155,8 +178,12 @@ class CAR(data.Dataset):
 
         self.transform = transform
         self.target_transform = target_transform
-        
+
         self.subsets = self.create_subsets(subset_to_idx, subset_name_map)
+        assert 0.0 < train_val_split <= 1.0
+        if train_val_split != 1.0:
+            assert 'train' in self.subsets
+            self.subsets['train'], self.subsets['val'] = train_val_datasets(self.subsets['train'], train_val_split)
 
     def create_subsets(self, subset_map: Dict[str, List[str]],
                        subset_name_map) -> Dict[str, Subset]:
@@ -204,5 +231,5 @@ class CAR(data.Dataset):
         fmt_str += "Min Height: {}\n".format(min([img.height for img, gt in self]))
         fmt_str += "Avg Width: {}\n".format(sum([img.width for img, gt in self]) / float(len(self)))
         fmt_str += "Avg Height: {}\n".format(sum([img.height for img, gt in self]) / float(len(self)))
-        fmt_str += "Avg Aspect: {}\n".format(sum([img.width/img.height for img, gt in self]) / float(len(self)))
+        fmt_str += "Avg Aspect: {}\n".format(sum([img.width / img.height for img, gt in self]) / float(len(self)))
         return fmt_str
