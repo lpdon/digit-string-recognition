@@ -94,7 +94,9 @@ def train(args: Namespace, verbose: bool = False):
     # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     cuda_avail = torch.cuda.is_available()
 
-    seq_length = 5
+    seq_length = 7
+    target_length = 3
+
     model = build_model(11, seq_length, args.batch_size)
 
     optimizer = torch.optim.Adam(model.parameters(), lr = args.lr)
@@ -127,7 +129,7 @@ def train(args: Namespace, verbose: bool = False):
 
                 new_gt = []
                 for j, c in enumerate(gt):
-                    if j == 3:
+                    if j == target_length:
                         break
                     new_gt.append(ord(c) - ord('0'))
                 new_target.append([new_gt])
@@ -156,7 +158,7 @@ def train(args: Namespace, verbose: bool = False):
             input_lengths = torch.full((output.shape[1],), output.shape[0], dtype=torch.long)
             # target_lengths = torch.Tensor([min(2, len(t.rstrip())) for t in batch_targets]).type(torch.long).cuda()
             # target_lengths = torch.Tensor([min(2, len(t.rstrip())) for t in batch_targets]).type(torch.long)
-            target_lengths = torch.Tensor([min(3, len(t.rstrip())) for t in batch_targets]).type(torch.long)
+            target_lengths = torch.Tensor([min(target_length, len(t.rstrip())) for t in batch_targets]).type(torch.long)
             # print(input_lengths, target_lengths)
             # assert False
             # print(output, target)
