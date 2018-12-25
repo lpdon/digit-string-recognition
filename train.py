@@ -95,12 +95,11 @@ def train(args: Namespace, verbose: bool = False):
     cuda_avail = torch.cuda.is_available()
 
     seq_length = 10
-    target_length = 6
 
     model = build_model(11, seq_length, args.batch_size)
 
     optimizer = torch.optim.Adam(model.parameters(), lr = args.lr)
-    floss = nn.CTCLoss(blank=10, reduction="mean")
+    floss = nn.CTCLoss(blank=10)
 
     if cuda_avail:
         model.cuda()
@@ -110,35 +109,17 @@ def train(args: Namespace, verbose: bool = False):
     model.train()
     for epoch in range(args.epochs):
         total_loss = num_loss = correct = samples = 0
-
-        dummy_images = None
-        dummy_targets = None
+        dummy_images = dummy_targets = None
 
         for batch_imgs, batch_targets in dataloaders[phase]:
             image = batch_imgs
             target = batch_targets
 
-            #add padding
-            padding = False
+            #string to individual ints
             new_target = []
-            for i, gt in enumerate(target):
-                gt = gt.rstrip()
-                if padding:
-                    while len(gt) < seq_length:
-                        gt += ":"
-
-                new_gt = []
-                for j, c in enumerate(gt):
-                    # if j == target_length:
-                    #     break
-                    new_gt.append(ord(c) - ord('0'))
-                # new_target.append([new_gt])
-                new_target += new_gt
-
-            # print(target)
-            # print(new_target)
-
-            # assert False
+            for gt in target:
+              new_gt = [int(c) for c in gt.rstrip()]
+              new_target += new_gt
 
             target = torch.Tensor(new_target)
             target = target.long()
@@ -146,7 +127,6 @@ def train(args: Namespace, verbose: bool = False):
             image = Variable(image)
             target = Variable(target)
 
-            # target = target.view((len(batch_targets)*seq_length))
             target = target.view((-1, ))
 
             if cuda_avail:
@@ -155,35 +135,18 @@ def train(args: Namespace, verbose: bool = False):
 
             optimizer.zero_grad()
             output = model(image)
-            # print(output.shape)
-            input_lengths = torch.full((output.shape[1],), output.shape[0], dtype=torch.long)
-            # target_lengths = torch.Tensor([min(2, len(t.rstrip())) for t in batch_targets]).type(torch.long).cuda()
-            # target_lengths = torch.Tensor([min(2, len(t.rstrip())) for t in batch_targets]).type(torch.long)
-            # target_lengths = torch.Tensor([min(target_length, len(t.rstrip())) for t in batch_targets]).type(torch.long)
-            target_lengths = torch.Tensor([len(t.rstrip()) for t in batch_targets]).type(torch.long)
-            # print(input_lengths, target_lengths)
-            # assert False
-            # print(output, target)
-            # print(output.shape, target.shape)
-            # assert False
 
+            input_lengths = torch.full((output.shape[1],), output.shape[0], dtype=torch.long)
+            target_lengths = torch.Tensor([len(t.rstrip()) for t in batch_targets]).type(torch.long)
             loss = floss(output, target, input_lengths, target_lengths)
-            # print(loss)
             loss.backward()
+
             optimizer.step()
 
             total_loss += loss.item()
             num_loss += 1
 
             pred = output.argmax(2)
-
-
-            # print(output)
-            # print(pred)
-            # assert False
-
-            # print(pred)
-            # print(target)
 
             # correct += pred.eq(target.view_as(pred)).sum().item()
             samples += len(batch_targets)*seq_length
