@@ -11,6 +11,8 @@ from torch.backends import cudnn
 from torch.utils.data import DataLoader
 from torchvision.transforms import transforms
 
+import yaml
+
 from car_dataset import CAR
 from model import StringNet
 from util import concat, length_tensor
@@ -18,9 +20,9 @@ from util import concat, length_tensor
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
-def parse_args():
+def create_parser():
     parser = ArgumentParser("Training script for Digit String Recognition PyTorch-Model.")
-    parser.add_argument("-d", "--data", type=str, required=True,
+    parser.add_argument("-d", "--data", type=str, required=False, default="",
                         help="Path to the root folder of the CAR-{A,B} dataset.")
     parser.add_argument("-e", "--epochs", type=int, default=50,
                         help="Number of epochs to train the model.")
@@ -37,7 +39,34 @@ def parse_args():
                         help="The initial learning rate.")
     parser.add_argument("-v", "--verbose", action='store_true', default=False, required=False,
                         help="Print more information.")
-    return parser.parse_args()
+    parser.add_argument("-c", "--config-file", type=str, required=False,
+                        help="Path to a yaml configuration file.")
+    return parser
+
+
+def parse_args():
+    parser = create_parser()
+    args = parser.parse_args()
+
+    if args.data is None and args.config_file is None:
+        parser.error("Dataset or config file required.")
+
+    if args.config_file:
+        try:
+            data = yaml.safe_load(open(args.config_file, "r"))
+            delattr(args, 'config_file')
+            arg_dict = args.__dict__
+            for key, value in data.items():
+                if isinstance(value, list):
+                    for v in value:
+                        arg_dict[key].append(v)
+                else:
+                    arg_dict[key] = value
+
+        except yaml.YAMLError as exception:
+            print(exception)
+
+    return args
 
 
 def create_dataloader(args: Namespace, verbose: bool = False) -> Dict[str, DataLoader]:
