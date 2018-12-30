@@ -1,6 +1,6 @@
 from argparse import ArgumentParser, Namespace
 from itertools import groupby
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 import Levenshtein as lv
 import numpy as np
@@ -13,6 +13,7 @@ from torchvision.transforms import transforms
 
 from car_dataset import CAR
 from model import StringNet
+from util import concat, length_tensor
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -79,12 +80,38 @@ def set_seed(seed: int) -> None:
     torch.manual_seed(seed)
     np.random.seed(seed)
     # Detect if we have a GPU available
-    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
     if torch.cuda.is_available():
         cudnn.deterministic = True
         cudnn.benchmark = False
         torch.cuda.manual_seed_all(seed)
+
+
+def apply_ctc_loss(floss, output, target: List[List[int]]):
+    target_lengths = length_tensor(target)
+    target = concat(target)
+    target = torch.Tensor(target)
+    target = target.long()
+    target = Variable(target)
+    target = target.view((-1,))
+    target = target.to(device)
+
+    # Calculate lengths
+    input_lengths = torch.full((output.shape[1],), output.shape[0], dtype=torch.long)
+
+    return floss(output, target, input_lengths, target_lengths)
+
+
+def calc_lv_dist(output, targets: List[str]):
+    distances = []
+    preds = output.argmax(2)
+    preds = preds.transpose(0, 1)
+    for pred, gt in zip(preds, targets):
+        pred_str = [x[0] for x in groupby(pred)]
+        pred_str = [str(int(p)) for p in pred_str if p != 10]
+        pred_str = ''.join(pred_str)
+        distance = lv.distance(pred_str, gt)
+        distances.append(distance)
+    return distances
 
 
 def train(args: Namespace, verbose: bool = False):
@@ -93,104 +120,101 @@ def train(args: Namespace, verbose: bool = False):
     # Load dataset and create data loaders
     dataloaders = create_dataloader(args, verbose)
 
-    # Detect if we have a GPU available
-    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    cuda_avail = torch.cuda.is_available()
-
-    seq_length = 10
+    seq_length = 12
 
     model = build_model(11, seq_length, args.batch_size).to(device)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr = args.lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     floss = nn.CTCLoss(blank=10)
 
     # Train here
     phase = 'train'
     for epoch in range(args.epochs):
-        total_loss = num_loss = correct = samples = 0
+        total_loss = num_samples = total_distance = 0
         dummy_images = dummy_batch_targets = None
         model.train()
 
-        for batch_imgs, batch_targets in dataloaders[phase]:
-            image = batch_imgs
-            target = batch_targets
+        for image, str_targets in dataloaders[phase]:
+            # string to individual ints
+            int_targets = [[int(c) for c in gt] for gt in str_targets]
 
-            #string to individual ints
-            new_target = []
-            for gt in target:
-              new_gt = [int(c) for c in gt.rstrip()]
-              new_target += new_gt
-
-            target = torch.Tensor(new_target)
-            target = target.long()
-
+            # Prepare image
             image = Variable(image)
-            target = Variable(target)
-
-            target = target.view((-1,))
-
             image = image.to(device)
-            target = target.to(device)
 
+            # Forward
             optimizer.zero_grad()
             output = model(image)
+            loss = apply_ctc_loss(floss, output, int_targets)
 
-            input_lengths = torch.full((output.shape[1],), output.shape[0], dtype=torch.long)
-            target_lengths = torch.Tensor([len(t.rstrip()) for t in batch_targets]).type(torch.long)
-            loss = floss(output, target, input_lengths, target_lengths)
+            # Backward
             loss.backward()
 
+            # Update
             optimizer.step()
 
+            distances = calc_lv_dist(output, str_targets)
+            total_distance += sum(distances)
             total_loss += loss.item()
-            num_loss += 1
+            num_samples += len(str_targets)
 
-            pred = output.argmax(2)
-
-            # correct += pred.eq(target.view_as(pred)).sum().item()
-            samples += len(batch_targets)*seq_length
-
-            dummy_images = image
-            dummy_batch_targets = batch_targets
+            if verbose:
+                dummy_images = image
+                dummy_batch_targets = str_targets
 
         val_results = test(model, dataloaders['val'])
-        print(f"Epoch {epoch + 1:2}: loss: {round(total_loss / num_loss, 6):8.6} |"
-              f" val_dist: {val_results['average_distance']:6.4}")
+        print("Epoch {}: loss: {} | avg_dist: {} | val_dist: {} | val_loss: {}".format(epoch + 1,
+                                                                                       round(total_loss / num_samples,
+                                                                                             6),
+                                                                                       round(
+                                                                                           total_distance / num_samples,
+                                                                                           6),
+                                                                                       round(val_results[
+                                                                                                 'average_distance'],
+                                                                                             6),
+                                                                                       round(val_results['loss'], 6)))
 
-        print(model(dummy_images).argmax(2)[:, :10], dummy_batch_targets[:10])
+        if verbose:
+            print(model(dummy_images).argmax(2)[:, :10], dummy_batch_targets[:10])
 
     # Test here
-    test_results = test(model, dataloaders['test'])
-    print(f"Test   : test_dist:  {test_results['average_distance']:6.4}")
+    test_results = test(model, dataloaders['test'], verbose)
+    print("Test   : test_dist:  {} | test_loss: {}".format(test_results['average_distance'],
+                                                           test_results['loss']))
 
 
-def test(model: nn.Module, dataloader: DataLoader) -> Dict[str, Any]:
+def test(model: nn.Module, dataloader: DataLoader, verbose: bool = False) -> Dict[str, Any]:
     model.eval()
     with torch.no_grad():
+        dummy_images = dummy_batch_targets = None
+        floss = nn.CTCLoss(blank=10)
         # Reset tracked metrics
-        total_distance = samples = 0
-        for batch_imgs, batch_targets in dataloader:
-            image = batch_imgs
+        total_distance = samples = total_loss = 0
+
+        for image, str_targets in dataloader:
+            # string to individual ints
+            int_targets = [[int(c) for c in gt] for gt in str_targets]
+
+            # Prepare image
             image = Variable(image)
+            image = image.to(device)
 
-            if torch.cuda.is_available():
-                image = image.cuda()
+            # Forward
+            output = model(image)
+            loss = apply_ctc_loss(floss, output, int_targets)
 
-            output: torch.Tensor = model(image)
+            total_loss += loss.item()
+            distances = calc_lv_dist(output, str_targets)
+            total_distance += sum(distances)
+            samples += len(str_targets)
 
-            preds = output.argmax(2)
-            preds = preds.transpose(0, 1)
-            for pred, gt in zip(preds, batch_targets):
-                pred_str = [x[0] for x in groupby(pred)]
-                pred_str = [str(int(p)) for p in pred_str if p != 10]
-                pred_str = ''.join(pred_str)
-                if total_distance == 0:
-                    print(pred_str)
-                    print(gt.rstrip())
-                distance = lv.distance(pred_str, gt.rstrip())
-                total_distance += distance
-                samples += 1
-    return {'average_distance': total_distance / samples}
+            if verbose:
+                dummy_images = image
+                dummy_batch_targets = str_targets
+        if verbose:
+            print("Validation example:")
+            print(model(dummy_images).argmax(2)[:, :10], dummy_batch_targets[:10])
+    return {'average_distance': total_distance / samples, 'loss': total_loss / samples}
 
 
 if __name__ == "__main__":
