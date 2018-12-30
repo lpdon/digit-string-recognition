@@ -72,6 +72,7 @@ def discover_dataset(dir: str, verbose: bool = True) -> Tuple[List[Tuple[str, st
         with open(gt_path, "r") as gt_f:
             for line in gt_f.readlines():
                 im_file, gt = line.split(sep="\t")
+                gt = gt.strip()
                 im_path = os.path.join(d, im_file)
                 if not os.path.isfile(im_path):
                     warn("Missing image in file system "
