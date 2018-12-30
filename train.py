@@ -151,7 +151,7 @@ def train(args: Namespace, verbose: bool = False):
             samples += len(batch_targets)*seq_length
 
             dummy_images = image
-            dummy_targets = target
+            dummy_targets = batch_targets
 
         print("Epoch %d: loss: %f | acc: %f" % (epoch + 1, total_loss/num_loss, correct/samples))
         print(model(dummy_images).argmax(2), dummy_targets)

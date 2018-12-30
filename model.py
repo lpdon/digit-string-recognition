@@ -70,17 +70,17 @@ class StringNet(nn.Module):
     x = x.view(x.size(0), -1) #flatten
     x = F.relu(self.fc1(x))
 
-    x = [x]
-    features = torch.cat(x).view(1, current_batch_size, -1)
+    x = [x for _ in range(self.seq_length)]
+    features = torch.cat(x).view(self.seq_length, current_batch_size, -1)
 
     hidden = self.init_hidden(current_batch_size)
     outs = torch.zeros(self.seq_length, current_batch_size, self.n_classes).to(device)
 
+    out, hidden = self.lstm(features, hidden)
+
     for t in range(self.seq_length):
-      out, hidden = self.lstm(features, hidden)
-      o_t = self.fc2(out)
-      o_t = F.log_softmax(o_t, dim=2)
+      o_t = self.fc2(out[t,:,:])
+      o_t = F.log_softmax(o_t, dim=1)
       outs[t, :, :] = o_t
-      i_t = o_t
 
     return outs
