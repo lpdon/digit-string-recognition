@@ -128,17 +128,36 @@ def apply_ctc_loss(floss, output, target: List[List[int]]):
     return floss(output, target, input_lengths, target_lengths)
 
 
-def calc_lv_dist(output, targets: List[str]):
-    distances = []
+def postproc_output(output) -> List[str]:
     preds = output.argmax(2)
     preds = preds.transpose(0, 1)
-    for pred, gt in zip(preds, targets):
+
+    proc_preds = []
+
+    for pred in preds:
         pred_str = [x[0] for x in groupby(pred)]
         pred_str = [str(int(p)) for p in pred_str if p != 10]
         pred_str = ''.join(pred_str)
-        distance = lv.distance(pred_str, gt)
+        proc_preds.append(pred_str)
+
+    return proc_preds
+
+
+def calc_lv_dist(output, targets: List[str]):
+    distances = []
+    preds = postproc_output(output)
+    for pred, gt in zip(preds, targets):
+        distance = lv.distance(pred, gt)
         distances.append(distance)
     return distances
+
+
+def calc_acc(output, targets: List[str]):
+    acc = []
+    preds = postproc_output(output)
+    for pred, gt in zip(preds, targets):
+        acc.append(pred == gt)
+    return acc
 
 
 def train(args: Namespace, seed: int = 0, verbose: bool = False) -> Dict[str, Any]:
@@ -157,7 +176,7 @@ def train(args: Namespace, seed: int = 0, verbose: bool = False) -> Dict[str, An
     # Train here
     phase = 'train'
     for epoch in range(args.epochs):
-        total_loss = num_samples = total_distance = 0
+        total_loss = num_samples = total_distance = total_accuracy = 0
         dummy_images = dummy_batch_targets = None
         model.train()
 
@@ -182,6 +201,8 @@ def train(args: Namespace, seed: int = 0, verbose: bool = False) -> Dict[str, An
 
             distances = calc_lv_dist(output, str_targets)
             total_distance += sum(distances)
+            accuracy = calc_acc(output, str_targets)
+            total_accuracy += sum(accuracy)
             total_loss += loss.item()
             num_samples += len(str_targets)
 
@@ -194,17 +215,20 @@ def train(args: Namespace, seed: int = 0, verbose: bool = False) -> Dict[str, An
             print(model(dummy_images).argmax(2)[:, :10], dummy_batch_targets[:10])
 
         val_results = test(model, dataloaders['val'], verbose)
-        print("Epoch {}: loss: {} | avg_dist: {} "
-              "| val_dist: {} | val_loss: {}".format(epoch + 1,
+        print("Epoch {}: loss: {} | avg_dist: {} | accuracy: {} "
+              "| val_dist: {} | val_loss: {} | val_acc: {}".format(epoch + 1,
                                                      round(total_loss / num_samples, 6),
                                                      round(total_distance / num_samples, 6),
+                                                     round(total_accuracy / num_samples, 6),
                                                      round(val_results['average_distance'], 6),
-                                                     round(val_results['loss'], 6)))
+                                                     round(val_results['loss'], 6),
+                                                     round(val_results['accuracy'], 6)))
 
     # Test here
     test_results = test(model, dataloaders['test'], verbose)
-    print("Test   : test_dist:  {} | test_loss: {}".format(test_results['average_distance'],
-                                                           test_results['loss']))
+    print("Test   : test_dist:  {} | test_loss: {} | test_acc: {}".format(test_results['average_distance'],
+                                                           test_results['loss'],
+                                                           test_results['accuracy']))
     return test_results
 
 
@@ -214,7 +238,7 @@ def test(model: nn.Module, dataloader: DataLoader, verbose: bool = False) -> Dic
         dummy_images = dummy_batch_targets = None
         floss = nn.CTCLoss(blank=10)
         # Reset tracked metrics
-        total_distance = samples = total_loss = 0
+        total_distance = samples = total_loss = total_accuracy = 0
 
         for image, str_targets in dataloader:
             # string to individual ints
@@ -231,6 +255,8 @@ def test(model: nn.Module, dataloader: DataLoader, verbose: bool = False) -> Dic
             total_loss += loss.item()
             distances = calc_lv_dist(output, str_targets)
             total_distance += sum(distances)
+            accuracy = calc_acc(output, str_targets)
+            total_accuracy += sum(accuracy)
             samples += len(str_targets)
 
             if verbose:
@@ -239,7 +265,8 @@ def test(model: nn.Module, dataloader: DataLoader, verbose: bool = False) -> Dic
         if verbose:
             print("Validation example:")
             print(model(dummy_images).argmax(2)[:, :10], dummy_batch_targets[:10])
-    return {'average_distance': total_distance / samples, 'loss': total_loss / samples}
+    return {'average_distance': total_distance / samples, 'loss': total_loss / samples,
+            'accuracy' : total_accuracy / samples}
 
 
 if __name__ == "__main__":
