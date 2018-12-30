@@ -167,8 +167,8 @@ class CAR(data.Dataset):
     """
 
     def __init__(self, root, loader=default_loader, transform=None, target_transform=None,
-                 subset_name_map='auto', train_val_split: float = 0.8):
-        samples, subset_to_idx = discover_dataset(root)
+                 subset_name_map='auto', train_val_split: float = 0.8, verbose: bool = False):
+        samples, subset_to_idx = discover_dataset(root, verbose=verbose)
         if len(samples) == 0:
             raise (RuntimeError("Found 0 files in subfolders of: " + root))
 
