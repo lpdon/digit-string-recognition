@@ -15,7 +15,6 @@ from car_dataset import CAR
 from model import StringNet
 from util import concat, length_tensor
 
-
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
@@ -162,20 +161,17 @@ def train(args: Namespace, verbose: bool = False):
                 dummy_images = image
                 dummy_batch_targets = str_targets
 
-        val_results = test(model, dataloaders['val'])
-        print("Epoch {}: loss: {} | avg_dist: {} | val_dist: {} | val_loss: {}".format(epoch + 1,
-                                                                                       round(total_loss / num_samples,
-                                                                                             6),
-                                                                                       round(
-                                                                                           total_distance / num_samples,
-                                                                                           6),
-                                                                                       round(val_results[
-                                                                                                 'average_distance'],
-                                                                                             6),
-                                                                                       round(val_results['loss'], 6)))
-
         if verbose:
+            print("Train examples: ")
             print(model(dummy_images).argmax(2)[:, :10], dummy_batch_targets[:10])
+
+        val_results = test(model, dataloaders['val'], verbose)
+        print("Epoch {}: loss: {} | avg_dist: {} "
+              "| val_dist: {} | val_loss: {}".format(epoch + 1,
+                                                     round(total_loss / num_samples, 6),
+                                                     round(total_distance / num_samples, 6),
+                                                     round(val_results['average_distance'], 6),
+                                                     round(val_results['loss'], 6)))
 
     # Test here
     test_results = test(model, dataloaders['test'], verbose)
