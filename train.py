@@ -14,8 +14,8 @@ from torchvision.transforms import transforms
 
 from car_dataset import CAR
 from model import StringNet
-from util import concat, length_tensor
 from timer import Timer
+from util import concat, length_tensor
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -85,7 +85,7 @@ def create_dataloader(args: Namespace, verbose: bool = False) -> Dict[str, DataL
     }
 
     # Load dataset
-    dataset = CAR(args.data, transform=data_transforms, train_val_split=args.train_val_split)
+    dataset = CAR(args.data, transform=data_transforms, train_val_split=args.train_val_split, verbose=verbose)
     if verbose:
         print(dataset)
 
