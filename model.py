@@ -4,6 +4,9 @@ import torch.nn.functional as F
 from torch import Tensor
 
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+
 class StringNet(nn.Module):
   def __init__(self, n_classes, seq_length, batch_size):
     """
@@ -39,13 +42,9 @@ class StringNet(nn.Module):
 
 
   def init_hidden(self, input_length):
-    # The axes semantics are (num_layers, minibatch_size, hidden_dim)
-    if torch.cuda.is_available():
-      return (torch.zeros(2, input_length, self.hidden_dim).cuda(),
-              torch.zeros(2, input_length, self.hidden_dim).cuda())
-    else:
-      return (torch.zeros(2, input_length, self.hidden_dim),
-              torch.zeros(2, input_length, self.hidden_dim))
+    # The axes semantics are (num_layers * num_directions, minibatch_size, hidden_dim)
+      return (torch.zeros(2, input_length, self.hidden_dim).to(device),
+              torch.zeros(2, input_length, self.hidden_dim).to(device))    
 
   
   def forward(self, x):
@@ -75,10 +74,7 @@ class StringNet(nn.Module):
     features = torch.cat(x).view(1, current_batch_size, -1)
 
     hidden = self.init_hidden(current_batch_size)
-    outs = torch.zeros(self.seq_length, current_batch_size, self.n_classes)
-
-    if torch.cuda.is_available():
-      outs = outs.cuda()
+    outs = torch.zeros(self.seq_length, current_batch_size, self.n_classes).to(device)
 
     for t in range(self.seq_length):
       out, hidden = self.lstm(features, hidden)

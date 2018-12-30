@@ -15,6 +15,9 @@ from car_dataset import CAR
 from model import StringNet
 
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+
 def parse_args():
     parser = ArgumentParser("Training script for Digit String Recognition PyTorch-Model.")
     parser.add_argument("-d", "--data", type=str, required=True,
@@ -96,13 +99,10 @@ def train(args: Namespace, verbose: bool = False):
 
     seq_length = 10
 
-    model = build_model(11, seq_length, args.batch_size)
+    model = build_model(11, seq_length, args.batch_size).to(device)
 
     optimizer = torch.optim.Adam(model.parameters(), lr = args.lr)
     floss = nn.CTCLoss(blank=10)
-
-    if cuda_avail:
-        model.cuda()
 
     # Train here
     phase = 'train'
@@ -129,9 +129,8 @@ def train(args: Namespace, verbose: bool = False):
 
             target = target.view((-1, ))
 
-            if cuda_avail:
-                image = image.cuda()
-                target = target.cuda()
+            image = image.to(device)
+            target = target.to(device)
 
             optimizer.zero_grad()
             output = model(image)
