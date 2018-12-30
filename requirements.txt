@@ -3,3 +3,4 @@ scikit-learn
 torch>=1.0
 torchvision
 python-Levenshtein
+PyYAML
