@@ -6,12 +6,11 @@ import Levenshtein as lv
 import numpy as np
 import torch
 import torch.nn as nn
+import yaml
 from torch.autograd import Variable
 from torch.backends import cudnn
 from torch.utils.data import DataLoader
 from torchvision.transforms import transforms
-
-import yaml
 
 from car_dataset import CAR
 from model import StringNet
@@ -257,7 +256,7 @@ if __name__ == "__main__":
         print(results)
         for key, values in results.items():
             avg = np.average(values)
-            var = sum(np.abs(values - avg)) / len(values)
+            std = sum(np.abs(values - avg)) / len(values)
             print(key + ": ")
-            print(f"\t Average:  {avg:.6}")
-            print(f"\t STD:      {var:.6}")
+            print("\t Average:  {}".format(avg))
+            print("\t STD:      {}".format(std))
