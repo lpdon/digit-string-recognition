@@ -31,7 +31,7 @@ def write_to_csv(history_item: Dict[str, Any], log_file: str,
     if write_header and append:
         warn("Writing header but appending to file. Header could be not on first line.")
     with open(log_file, 'a' if append else 'w') as csvfile:
-        csvwriter = csv.DictWriter(csvfile, history_item.keys(), delimiter=',')
+        csvwriter = csv.DictWriter(csvfile, history_item.keys(), delimiter=',', quoting=csv.QUOTE_NONNUMERIC)
         if write_header:
             csvwriter.writeheader()
         csvwriter.writerow(history_item)
