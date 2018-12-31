@@ -11,7 +11,7 @@ import yaml
 def create_parser():
     parser = ArgumentParser("Script for plotting of training log.")
     parser.add_argument("--log", required=False, type=str, help="Path to the log file.")
-    parser.add_argument("--columns", required=False, nargs='+', type=List[str], default=[],
+    parser.add_argument("--columns", required=False, nargs='+', type=str, default="",
                         help="Specifies which values should be plotted")
     parser.add_argument('--multi', default=False, action='store_true',
                         help='If set, plot every column into a separate plot.')
@@ -29,7 +29,7 @@ def parse_args():
     parser = create_parser()
     args = parser.parse_args()
 
-    if args.columns is None and args.config_file is None:
+    if not args.columns and args.config_file is None:
         parser.error("Columns or config file required.")
 
     if args.config_file:
@@ -38,11 +38,7 @@ def parse_args():
             delattr(args, 'config_file')
             arg_dict = args.__dict__
             for key, value in data.items():
-                if isinstance(value, list):
-                    for v in value:
-                        arg_dict[key].append(v)
-                else:
-                    arg_dict[key] = value
+                arg_dict[key] = value
 
         except yaml.YAMLError as exception:
             print(exception)
