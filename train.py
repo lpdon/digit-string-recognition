@@ -7,7 +7,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 import yaml
-from torch.autograd import Variable
 from torch.backends import cudnn
 from torch.utils.data import DataLoader
 from torchvision.transforms import transforms
@@ -120,7 +119,6 @@ def apply_ctc_loss(floss, output, target: List[List[int]]):
     target = concat(target)
     target = torch.Tensor(target)
     target = target.long()
-    target = Variable(target)
     target = target.view((-1,))
     target = target.to(device)
 
@@ -173,7 +171,7 @@ def train(args: Namespace, seed: int = 0, verbose: bool = False) -> Tuple[List[D
     model = build_model(11, seq_length, args.batch_size).to(device)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-    floss = nn.CTCLoss(blank=10)
+    floss = nn.CTCLoss(blank=10, reduction='mean')
 
     # Train here
     history = []
@@ -195,7 +193,6 @@ def train(args: Namespace, seed: int = 0, verbose: bool = False) -> Tuple[List[D
             int_targets = [[int(c) for c in gt] for gt in str_targets]
 
             # Prepare image
-            image = Variable(image)
             image = image.to(device)
 
             # Forward
@@ -204,7 +201,7 @@ def train(args: Namespace, seed: int = 0, verbose: bool = False) -> Tuple[List[D
             loss = apply_ctc_loss(floss, output, int_targets)
 
             # Backward
-            loss.backward()
+            loss.sum().backward()
 
             # Update
             optimizer.step()
@@ -213,7 +210,7 @@ def train(args: Namespace, seed: int = 0, verbose: bool = False) -> Tuple[List[D
             total_distance += sum(distances)
             accuracy = calc_acc(output, str_targets)
             total_accuracy += sum(accuracy)
-            total_loss += loss.item()
+            total_loss += loss.sum().item()
             num_samples += len(str_targets)
 
             if verbose:
@@ -264,7 +261,6 @@ def test(model: nn.Module, dataloader: DataLoader, verbose: bool = False) -> Dic
             int_targets = [[int(c) for c in gt] for gt in str_targets]
 
             # Prepare image
-            image = Variable(image)
             image = image.to(device)
 
             # Forward
