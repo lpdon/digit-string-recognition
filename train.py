@@ -101,7 +101,7 @@ def create_dataloader(args: Namespace, verbose: bool = False) -> Dict[str, DataL
     return dataloaders_dict
 
 
-def build_model(n_classes: int, seq_length: int, batch_size: int) -> nn.Module:
+def build_model(n_classes: int, seq_length: int, batch_size: int) -> StringNet:
     return StringNet(n_classes, seq_length, batch_size)
 
 
@@ -219,7 +219,6 @@ def train(args: Namespace, seed: int = 0, verbose: bool = False) -> Tuple[List[D
             if verbose:
                 dummy_images = image
                 dummy_batch_targets = str_targets
-
             batch_timer.stop()
             if batch_num % 10 == 0:
                 print(batch_timer.format_status(num_total=total_batches - batch_num) + 20 * " ", end='\r', flush=True)
