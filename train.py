@@ -15,7 +15,7 @@ from torchvision.transforms import transforms
 from car_dataset import CAR
 from model import StringNet
 from timer import Timer
-from util import concat, length_tensor, format_status_line
+from util import concat, length_tensor, format_status_line, write_to_csv
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -41,6 +41,7 @@ def create_parser():
                         help="Print more information.")
     parser.add_argument("-c", "--config-file", type=str, required=False,
                         help="Path to a yaml configuration file.")
+    parser.add_argument("--log", required=False, type=str, help="Path to the log file destination.")
     return parser
 
 
@@ -237,8 +238,11 @@ def train(args: Namespace, seed: int = 0, verbose: bool = False) -> Tuple[List[D
         history_item['time'] = epoch_timer.last()
         history_item.update({"val_" + key: value for key, value in val_results.items()})
         history.append(history_item)
+
         status_line = format_status_line(history_item)
         print(status_line)
+
+        write_to_csv(history_item, args.log, write_header=epoch == 0, append=epoch != 0)
 
     # Test here
     test_results = test(model, dataloaders['test'], verbose)

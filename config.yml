@@ -4,3 +4,4 @@ epochs : 5
 batch_size : 8
 lr : 1.0e-4
 verbose : True
+log: train_log.txt
