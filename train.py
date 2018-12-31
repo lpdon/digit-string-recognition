@@ -1,6 +1,6 @@
 from argparse import ArgumentParser, Namespace
 from itertools import groupby
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Tuple
 
 import Levenshtein as lv
 import numpy as np
@@ -15,7 +15,7 @@ from torchvision.transforms import transforms
 from car_dataset import CAR
 from model import StringNet
 from timer import Timer
-from util import concat, length_tensor
+from util import concat, length_tensor, format_status_line
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -161,7 +161,7 @@ def calc_acc(output, targets: List[str]):
     return acc
 
 
-def train(args: Namespace, seed: int = 0, verbose: bool = False) -> Dict[str, Any]:
+def train(args: Namespace, seed: int = 0, verbose: bool = False) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     set_seed(seed)
 
     # Load dataset and create data loaders
@@ -175,6 +175,7 @@ def train(args: Namespace, seed: int = 0, verbose: bool = False) -> Dict[str, An
     floss = nn.CTCLoss(blank=10)
 
     # Train here
+    history = []
     phase = 'train'
     batch_timer = Timer()
     epoch_timer = Timer()
@@ -228,23 +229,23 @@ def train(args: Namespace, seed: int = 0, verbose: bool = False) -> Dict[str, An
             print(model(dummy_images).argmax(2)[:, :10], dummy_batch_targets[:10])
 
         val_results = test(model, dataloaders['val'], verbose)
-        print("Epoch {}: loss: {} | avg_dist: {} | accuracy: {} | time {}s "
-              "| val_dist: {} | val_loss: {}".format(epoch + 1,
-                                                     round(total_loss / num_samples, 6),
-                                                     round(total_distance / num_samples, 6),
-                                                     round(total_accuracy / num_samples, 6),
-                                                     int(epoch_timer.last()),
-                                                     round(val_results['average_distance'], 6),
-                                                     round(val_results['loss'], 6),
-                                                     round(val_results['accuracy'], 6)))
+        history_item = {}
+        history_item['epoch'] = epoch + 1
+        history_item['avg_dist'] = total_distance / num_samples
+        history_item['avg_loss'] = total_loss / num_samples
+        history_item['accuracy'] = total_accuracy / num_samples
+        history_item['time'] = epoch_timer.last()
+        history_item.update({"val_" + key: value for key, value in val_results.items()})
+        history.append(history_item)
+        status_line = format_status_line(history_item)
+        print(status_line)
 
     # Test here
     test_results = test(model, dataloaders['test'], verbose)
-    print("Test   : test_dist:  {} | test_loss: {} | test_acc: {}".format(test_results['average_distance'],
-                                                           test_results['loss'],
-                                                           test_results['accuracy']))
+    status_line = format_status_line(test_results)
+    print("Test         | " + status_line)
     test_results["total_training_time"] = epoch_timer.total()
-    return test_results
+    return history, test_results
 
 
 def test(model: nn.Module, dataloader: DataLoader, verbose: bool = False) -> Dict[str, Any]:
@@ -280,8 +281,8 @@ def test(model: nn.Module, dataloader: DataLoader, verbose: bool = False) -> Dic
         if verbose:
             print("Validation example:")
             print(model(dummy_images).argmax(2)[:, :10], dummy_batch_targets[:10])
-    return {'average_distance': total_distance / samples, 'loss': total_loss / samples,
-            'accuracy' : total_accuracy / samples}
+    return {'avg_dist': total_distance / samples, 'avg_loss': total_loss / samples,
+            'accuracy': total_accuracy / samples}
 
 
 if __name__ == "__main__":
@@ -291,6 +292,7 @@ if __name__ == "__main__":
     else:
         # Get the results for every seed
         results = [train(args, seed=seed, verbose=args.verbose) for seed in args.seed]
+        results = [result[1] for result in results]
         # Create dictionary to get a mapping from metric_name -> array of results of that metric
         # e.g. { 'accuracy': [0.67, 0.68] }
         metrics = next(iter(results)).keys()
