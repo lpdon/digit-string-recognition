@@ -37,4 +37,4 @@ class Timer:
         return self._measured_times[-1]
 
     def format_status(self, tail_size: int = 15, num_total=None) -> str:
-        return "{:4.3} ms | {} s".format(self.average_tail(tail_size) * 1e3, int(self.total(num_total)))
+        return "{:8.3f} ms | {} s".format(self.average_tail(tail_size) * 1e3, int(self.total(num_total)))
