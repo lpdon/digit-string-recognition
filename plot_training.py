@@ -5,12 +5,13 @@ from typing import List, Any, Dict
 
 import matplotlib.pyplot as plt
 from numpy.ma import arange
+import yaml
 
 
-def parse_args():
+def create_parser():
     parser = ArgumentParser("Script for plotting of training log.")
     parser.add_argument("--log", required=False, type=str, help="Path to the log file.")
-    parser.add_argument("--columns", required=True, nargs='+', type=str,
+    parser.add_argument("--columns", required=False, nargs='+', type=List[str], default=[],
                         help="Specifies which values should be plotted")
     parser.add_argument('--multi', default=False, action='store_true',
                         help='If set, plot every column into a separate plot.')
@@ -19,7 +20,34 @@ def parse_args():
                              'as specified with --refresh-time.')
     parser.add_argument('--refresh-time', type=int, default=10,
                         help='Specify the seconds to wait until the graph is refreshed if --refresh is set.')
-    return parser.parse_args()
+    parser.add_argument("-c", "--config-file", type=str, required=False,
+                        help="Path to a yaml configuration file.")
+    return parser
+
+
+def parse_args():
+    parser = create_parser()
+    args = parser.parse_args()
+
+    if args.columns is None and args.config_file is None:
+        parser.error("Columns or config file required.")
+
+    if args.config_file:
+        try:
+            data = yaml.safe_load(open(args.config_file, "r"))
+            delattr(args, 'config_file')
+            arg_dict = args.__dict__
+            for key, value in data.items():
+                if isinstance(value, list):
+                    for v in value:
+                        arg_dict[key].append(v)
+                else:
+                    arg_dict[key] = value
+
+        except yaml.YAMLError as exception:
+            print(exception)
+
+    return args
 
 
 def read_log(log_file: str) -> List[Dict[str, Any]]:

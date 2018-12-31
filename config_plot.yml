@@ -1,0 +1,8 @@
+columns : 
+        - avg_loss
+        - accuracy
+        - val_avg_loss
+        - val_accuracy
+log : train_log.txt
+refresh : True
+multi : False
