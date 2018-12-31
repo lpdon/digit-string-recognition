@@ -4,6 +4,7 @@ from argparse import ArgumentParser
 from typing import List, Any, Dict
 
 import matplotlib.pyplot as plt
+from numpy.ma import arange
 
 
 def parse_args():
@@ -27,13 +28,13 @@ def plot(log_file: str, columns: List[str], multiple_plots: bool = False):
     history = read_log(log_file)
     selected_columns = [[row[sel_key] for row in history] for sel_key in columns]
     num_plot_rows = int(math.ceil(math.sqrt(len(columns)))) if multiple_plots else 1
-    print(num_plot_rows)
 
+    x = arange(len(history)) + 1
     for num, (col_name, col) in enumerate(zip(columns, selected_columns)):
         # Find the right spot on the plot
         if multiple_plots:
             plt.subplot(num_plot_rows, num_plot_rows, num + 1)
-        plt.plot(col, label=col_name)
+        plt.plot(x, col, label=col_name)
         plt.legend()
     plt.show()
 
