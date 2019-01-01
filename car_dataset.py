@@ -4,10 +4,11 @@ from typing import Tuple, List, Dict
 from warnings import warn
 
 import numpy as np
+import torch
 import torch.utils.data as data
 from PIL import Image
 from sklearn.model_selection import train_test_split
-from torch.utils.data import Subset, Dataset
+from torch.utils.data import Subset, Dataset, DataLoader
 
 
 def train_val_datasets(dataset: Dataset, val_split: float = 0.5, shuffle: bool = True) -> Tuple[Dataset, Dataset]:
@@ -234,3 +235,23 @@ class CAR(data.Dataset):
         fmt_str += "Avg Height: {}\n".format(sum([img.height for img, gt in self]) / float(len(self)))
         fmt_str += "Avg Aspect: {}\n".format(sum([img.width / img.height for img, gt in self]) / float(len(self)))
         return fmt_str
+
+    def mean_and_std(self) -> Tuple[float, float]:
+        loader = DataLoader(
+            self.subsets['train'],
+            batch_size=10,
+            num_workers=1,
+            shuffle=False
+        )
+        mean = torch.full((3,), 0.0)
+        std = torch.full((3,), 0.0)
+        nb_samples = 0.
+        for data, gt in loader:
+            batch_samples = data.size(0)
+            data = data.view(batch_samples, data.size(1), -1)
+            mean += data.mean(2).sum(0)
+            std += data.std(2).sum(0)
+            nb_samples += batch_samples
+        mean /= nb_samples
+        std /= nb_samples
+        return mean, std
