@@ -201,7 +201,7 @@ def train(args: Namespace, seed: int = 0, verbose: bool = False) -> Tuple[List[D
             loss = apply_ctc_loss(floss, output, int_targets)
 
             # Backward
-            loss.sum().backward()
+            loss.backward(torch.ones_like(loss.data))
 
             # Update
             optimizer.step()
