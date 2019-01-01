@@ -246,6 +246,7 @@ def train(args: Namespace, seed: int = 0, verbose: bool = False) -> Tuple[List[D
     status_line = format_status_line(test_results)
     print("Test         | " + status_line)
     test_results["total_training_time"] = epoch_timer.total()
+    torch.save(model.state_dict(), './model.pth')
     return history, test_results
 
 
