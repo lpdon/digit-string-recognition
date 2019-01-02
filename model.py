@@ -16,7 +16,7 @@ class StringNet(nn.Module):
         self.n_classes = n_classes
         self.seq_length = seq_length
         self.batch_size = batch_size
-        self.hidden_dim = 200
+        self.hidden_dim = 64
         self.bidirectional = True
         self.lstm_layers = 1
 
