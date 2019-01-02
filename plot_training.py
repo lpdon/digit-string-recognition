@@ -4,8 +4,8 @@ from argparse import ArgumentParser
 from typing import List, Any, Dict
 
 import matplotlib.pyplot as plt
-from numpy.ma import arange
 import yaml
+from numpy.ma import arange
 
 
 def create_parser():
@@ -22,6 +22,9 @@ def create_parser():
                         help='Specify the seconds to wait until the graph is refreshed if --refresh is set.')
     parser.add_argument("-c", "--config-file", type=str, required=False,
                         help="Path to a yaml configuration file.")
+    parser.add_argument("-s", "--save-file", type=str, required=False,
+                        help="Path to destination where an image of the plot should be saved. Will be saved repeatedly"
+                             " if --refresh is specified.")
     return parser
 
 
@@ -53,7 +56,7 @@ def read_log(log_file: str) -> List[Dict[str, Any]]:
     return history
 
 
-def plot(log_file: str, columns: List[str], multiple_plots: bool = False):
+def plot(log_file: str, columns: List[str], multiple_plots: bool = False, save_dest: str = None):
     history = read_log(log_file)
     selected_columns = [[row[sel_key] for row in history] for sel_key in columns]
     num_plot_rows = int(math.ceil(math.sqrt(len(columns)))) if multiple_plots else 1
@@ -65,20 +68,21 @@ def plot(log_file: str, columns: List[str], multiple_plots: bool = False):
             plt.subplot(num_plot_rows, num_plot_rows, num + 1)
         plt.plot(x, col, label=col_name)
         plt.legend()
+        if save_dest is not None:
+            plt.savefig(save_dest)
 
 
-def plot_refresh(log_file: str, columns: List[str], multiple_plots: bool = False, refresh: bool = False,
-                 refresh_time: int = 10):
+def plot_refresh(log_file: str, columns: List[str], multiple_plots: bool = False, save_dest: str = None,
+                 refresh: bool = False, refresh_time: int = 10):
     while True:
         plt.ion()
-        plot(log_file, columns, multiple_plots)
+        plot(log_file, columns, multiple_plots, save_dest=save_dest)
         if not refresh:
             break
         plt.pause(refresh_time)
-        # sleep(refresh_time)
 
 
 if __name__ == "__main__":
     args = parse_args()
-    plot_refresh(args.log, columns=args.columns, multiple_plots=args.multi, refresh=args.refresh,
-                 refresh_time=args.refresh_time)
+    plot_refresh(args.log, columns=args.columns, multiple_plots=args.multi, save_dest=args.save_file,
+                 refresh=args.refresh, refresh_time=args.refresh_time)
