@@ -62,6 +62,8 @@ def plot(log_file: str, columns: List[str], multiple_plots: bool = False, save_d
     num_plot_rows = int(math.ceil(math.sqrt(len(columns)))) if multiple_plots else 1
     x = arange(len(history)) + 1
     plt.clf()
+    plt.subplots_adjust(top=0.95, bottom=0.05, right=0.95, left=0.05,
+                        hspace=0.2, wspace=0.2)
     for num, (col_name, col) in enumerate(zip(columns, selected_columns)):
         # Find the right spot on the plot
         if multiple_plots:
@@ -69,7 +71,7 @@ def plot(log_file: str, columns: List[str], multiple_plots: bool = False, save_d
         plt.plot(x, col, label=col_name)
         plt.legend()
         if save_dest is not None:
-            plt.savefig(save_dest)
+            plt.savefig(save_dest, pad_inches=0.0)
 
 
 def plot_refresh(log_file: str, columns: List[str], multiple_plots: bool = False, save_dest: str = None,
