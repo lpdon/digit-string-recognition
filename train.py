@@ -106,6 +106,10 @@ def build_model(n_classes: int, seq_length: int, batch_size: int) -> StringNet:
     return StringNet(n_classes, seq_length, batch_size)
 
 
+def loss_func():
+    return nn.CTCLoss(blank=10, reduction='mean')
+
+
 def set_seed(seed: int) -> None:
     torch.manual_seed(seed)
     np.random.seed(seed)
@@ -173,7 +177,7 @@ def train(args: Namespace, seed: int = 0, verbose: bool = False) -> Tuple[List[D
     model = build_model(11, seq_length, args.batch_size).to(device)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-    floss = nn.CTCLoss(blank=10, reduction='mean')
+    floss = loss_func()
 
     # Train here
     history = []
@@ -255,7 +259,7 @@ def test(model: nn.Module, dataloader: DataLoader, verbose: bool = False) -> Dic
     model.eval()
     with torch.no_grad():
         dummy_images = dummy_batch_targets = None
-        floss = nn.CTCLoss(blank=10)
+        floss = loss_func()
         # Reset tracked metrics
         total_distance = samples = total_loss = total_accuracy = 0
 
@@ -270,7 +274,7 @@ def test(model: nn.Module, dataloader: DataLoader, verbose: bool = False) -> Dic
             output = model(image)
             loss = apply_ctc_loss(floss, output, int_targets)
 
-            total_loss += loss.item()
+            total_loss += loss.sum().item()
             distances = calc_lv_dist(output, str_targets)
             total_distance += sum(distances)
             accuracy = calc_acc(output, str_targets)
