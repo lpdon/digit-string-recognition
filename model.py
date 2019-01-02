@@ -32,12 +32,17 @@ class StringNet(nn.Module):
 
         self.conv5 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding=0)
         self.conv6 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=0)
+        self.conv7 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=0)
         self.dropout3 = nn.Dropout(p=0.8)
         self.pool3 = nn.MaxPool2d(2)
 
-        self.fc1 = nn.Linear(128 * 9 * 34, 128 * seq_length)  # depend on the flatten output,
+        self.conv8 = nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, padding=0)
+        self.conv9 = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=0)
+        self.conv10 = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=0)
+        self.dropout4 = nn.Dropout(p=0.8)
+        self.pool4 = nn.MaxPool2d(2)
 
-        self.lstm = nn.LSTM(128 * seq_length, self.hidden_dim, num_layers=self.lstm_layers, bias=True,
+        self.lstm = nn.LSTM(256 * 1 * 13, self.hidden_dim, num_layers=self.lstm_layers, bias=True,
                             bidirectional=self.bidirectional)
 
         self.fc2 = nn.Linear(self.hidden_dim * self.directions, n_classes)
@@ -66,11 +71,17 @@ class StringNet(nn.Module):
 
         x = F.relu(self.conv5(x))
         x = F.relu(self.conv6(x))
+        x = F.relu(self.conv7(x))
         x = self.dropout3(x)
         x = self.pool3(x)
 
+        x = F.relu(self.conv8(x))
+        x = F.relu(self.conv9(x))
+        x = F.relu(self.conv10(x))
+        x = self.dropout4(x)
+        x = self.pool4(x)
+
         x = x.view(x.size(0), -1)  # flatten
-        x = F.relu(self.fc1(x))
 
         features = x.view(1, current_batch_size, -1).repeat(self.seq_length, 1, 1)
         hidden = self.init_hidden(current_batch_size)
