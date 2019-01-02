@@ -1,6 +1,7 @@
 from argparse import ArgumentParser, Namespace
 from itertools import groupby
 from typing import Dict, Any, List, Tuple
+from pathlib import Path
 
 import Levenshtein as lv
 import numpy as np
@@ -41,6 +42,10 @@ def create_parser():
     parser.add_argument("-c", "--config-file", type=str, required=False,
                         help="Path to a yaml configuration file.")
     parser.add_argument("--log", required=False, type=str, help="Path to the log file destination.")
+    parser.add_argument("--save_path", required=False, type=str, default="", 
+                        help="Path to the model destination. If empty, model won't be saved.")
+    parser.add_argument("--load_path", required=False, type=str, default="", 
+                        help="Path to the saved model. If empty, model won't be loaded.")
     return parser
 
 
@@ -174,7 +179,10 @@ def train(args: Namespace, seed: int = 0, verbose: bool = False) -> Tuple[List[D
 
     seq_length = 12
 
-    model = build_model(11, seq_length, args.batch_size).to(device)
+    if args.load_path is not None and Path(args.load_path).is_file():
+      model = torch.load(args.load_path)      
+    else: 
+      model = build_model(11, seq_length, args.batch_size).to(device)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     floss = loss_func()
@@ -245,6 +253,9 @@ def train(args: Namespace, seed: int = 0, verbose: bool = False) -> Tuple[List[D
         print(status_line)
 
         write_to_csv(history_item, args.log, write_header=epoch == 0, append=epoch != 0)
+
+        if args.save_path is not None:
+          torch.save(model, args.save_path)          
 
     # Test here
     test_results = test(model, dataloaders['test'], verbose)
