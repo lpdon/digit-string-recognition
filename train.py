@@ -1,7 +1,7 @@
 from argparse import ArgumentParser, Namespace
 from itertools import groupby
-from typing import Dict, Any, List, Tuple
 from pathlib import Path
+from typing import Dict, Any, List, Tuple
 
 import Levenshtein as lv
 import numpy as np
@@ -88,6 +88,7 @@ def create_dataloader(args: Namespace, verbose: bool = False) -> Dict[str, DataL
         'test': transforms.Compose([
             transforms.Resize((width, height)),
             transforms.ToTensor(),
+            transforms.Normalize([0.6205, 0.6205, 0.6205], [0.1343, 0.1343, 0.1343])
         ]),
     }
 
