@@ -22,24 +22,24 @@ class StringNet(nn.Module):
 
         self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, padding=0)
         self.conv2 = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, padding=0)
-        self.dropout1 = nn.Dropout(p=0.8)
+        self.dropout1 = nn.Dropout2d(p=0.5)
         self.pool1 = nn.MaxPool2d(2)
 
         self.conv3 = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, padding=0)
         self.conv4 = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, padding=0)
-        self.dropout2 = nn.Dropout(p=0.8)
+        self.dropout2 = nn.Dropout2d(p=0.5)
         self.pool2 = nn.MaxPool2d(2)
 
         self.conv5 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, padding=0)
         self.conv6 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding=0)
         self.conv7 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding=0)
-        self.dropout3 = nn.Dropout(p=0.8)
+        self.dropout3 = nn.Dropout2d(p=0.5)
         self.pool3 = nn.MaxPool2d(2)
 
         self.conv8 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding=0)
         self.conv9 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=0)
         self.conv10 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=0)
-        self.dropout4 = nn.Dropout(p=0.8)
+        self.dropout4 = nn.Dropout2d(p=0.5)
         self.pool4 = nn.MaxPool2d(2)
 
         self.lstm = nn.LSTM(128 * 1 * 13, self.hidden_dim, num_layers=self.lstm_layers, bias=True,
