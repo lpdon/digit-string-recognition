@@ -82,6 +82,7 @@ def create_dataloader(args: Namespace, verbose: bool = False) -> Dict[str, DataL
         'train': transforms.Compose([
             transforms.Resize((width, height)),
             transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.5, hue=0.5),
+            transforms.RandomAffine(degrees=10, translate=(0.05, 0.05), scale=(0.95, 1.05), shear=10),
             transforms.ToTensor(),
             transforms.Normalize([0.6205, 0.6205, 0.6205], [0.1343, 0.1343, 0.1343])
         ]),
