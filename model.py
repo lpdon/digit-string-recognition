@@ -16,36 +16,46 @@ class StringNet(nn.Module):
         self.n_classes = n_classes
         self.seq_length = seq_length
         self.batch_size = batch_size
-        self.hidden_dim = 64
+        self.hidden_dim = 100
         self.bidirectional = True
-        self.lstm_layers = 1
+        self.lstm_layers = 2
 
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, padding=0)
-        self.conv2 = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, padding=0)
-        self.dropout1 = nn.Dropout2d(p=0.5)
-        self.pool1 = nn.MaxPool2d(2)
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=64, kernel_size=5, padding=1, stride=1)
+        self.bn1 = nn.BatchNorm2d(64)
+        self.pool1 = nn.MaxPool2d(3, stride=1)
 
-        self.conv3 = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, padding=0)
-        self.conv4 = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, padding=0)
-        self.dropout2 = nn.Dropout2d(p=0.5)
-        self.pool2 = nn.MaxPool2d(2)
+        self.conv2 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding=1, stride=1)
+        self.bn2 = nn.BatchNorm2d(64)
+        self.conv3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding=1, stride=1)
+        self.bn3 = nn.BatchNorm2d(64)
+        
+        self.conv4 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding=1, stride=2)
+        self.bn4 = nn.BatchNorm2d(128)
+        self.conv5 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1, stride=1)
+        self.bn5 = nn.BatchNorm2d(128)
+        self.res_conv1 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=1, padding=0, stride=2)
+        self.bn_res1 = nn.BatchNorm2d(128)
 
-        self.conv5 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, padding=0)
-        self.conv6 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding=0)
-        self.conv7 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding=0)
-        self.dropout3 = nn.Dropout2d(p=0.5)
-        self.pool3 = nn.MaxPool2d(2)
+        self.conv6 = nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, padding=1, stride=2)
+        self.bn6 = nn.BatchNorm2d(256)
+        self.conv7 = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1, stride=1)
+        self.bn7 = nn.BatchNorm2d(256)
+        self.res_conv2 = nn.Conv2d(in_channels=128, out_channels=256, kernel_size=1, padding=0, stride=2)
+        self.bn_res2 = nn.BatchNorm2d(256)
 
-        self.conv8 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding=0)
-        self.conv9 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=0)
-        self.conv10 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=0)
-        self.dropout4 = nn.Dropout2d(p=0.5)
-        self.pool4 = nn.MaxPool2d(2)
+        self.conv8 = nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, padding=1, stride=2)
+        self.bn8 = nn.BatchNorm2d(512)
+        self.conv9 = nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1, stride=1)
+        self.bn9 = nn.BatchNorm2d(512)
+        self.res_conv3 = nn.Conv2d(in_channels=256, out_channels=512, kernel_size=1, padding=0, stride=2)
+        self.bn_res3 = nn.BatchNorm2d(512)
 
-        self.lstm = nn.LSTM(128 * 1 * 13, self.hidden_dim, num_layers=self.lstm_layers, bias=True,
-                            bidirectional=self.bidirectional)
+        self.lstm = nn.LSTM(227328, self.hidden_dim, num_layers=self.lstm_layers, bias=True,
+                            bidirectional=self.bidirectional, dropout=0.5)
 
         self.fc2 = nn.Linear(self.hidden_dim * self.directions, n_classes)
+        # self.fc2 = nn.Linear(self.hidden_dim, n_classes)
+        self.dropout5 = nn.Dropout(p=0.5)
 
     def init_hidden(self, input_length):
         # The axes semantics are (num_layers * num_directions, minibatch_size, hidden_dim)
@@ -59,27 +69,24 @@ class StringNet(nn.Module):
         constructor as well as arbitrary operators on Variables.
         """
         current_batch_size = x.shape[0]
-        x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
-        x = self.dropout1(x)
-        x = self.pool1(x)
+        x = F.relu(self.bn1(self.conv1(x)))
+        x = res1 = self.pool1(x)
 
-        x = F.relu(self.conv3(x))
-        x = F.relu(self.conv4(x))
-        x = self.dropout2(x)
-        x = self.pool2(x)
+        x = F.relu(self.bn2(self.conv2(x)))
+        x = self.bn3(self.conv3(x))
+        x = sum1 = F.relu(x.add(res1))        
 
-        x = F.relu(self.conv5(x))
-        x = F.relu(self.conv6(x))
-        x = F.relu(self.conv7(x))
-        x = self.dropout3(x)
-        x = self.pool3(x)
+        x = F.relu(self.bn4(self.conv4(x)))
+        x = self.bn5(self.conv5(x))
+        x = sum2 = F.relu(x.add(self.bn_res1(self.res_conv1(sum1))))
 
-        x = F.relu(self.conv8(x))
-        x = F.relu(self.conv9(x))
-        x = F.relu(self.conv10(x))
-        x = self.dropout4(x)
-        x = self.pool4(x)
+        x = F.relu(self.bn6(self.conv6(x)))
+        x = self.bn7(self.conv7(x))
+        x = sum3 = F.relu(x.add(self.bn_res2(self.res_conv2(sum2))))
+
+        x = F.relu(self.bn8(self.conv8(x)))
+        x = self.bn9(self.conv9(x))
+        x = F.relu(x.add(self.bn_res3(self.res_conv3(sum3))))
 
         x = x.view(x.size(0), -1)  # flatten
 
@@ -87,6 +94,12 @@ class StringNet(nn.Module):
         hidden = self.init_hidden(current_batch_size)
 
         outs, hidden = self.lstm(features, hidden)
+
+        # print(outs.shape)
+        # assert False
+
+        # outs = outs[:, :, :self.hidden_dim].add(outs[:, :, self.hidden_dim:])
+        # print(outs.shape)
 
         # Decode the hidden state of the last time step
         outs = self.fc2(outs)
