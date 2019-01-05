@@ -18,7 +18,7 @@ class StringNet(nn.Module):
         self.batch_size = batch_size
         self.hidden_dim = 100
         self.bidirectional = True
-        self.lstm_layers = 2
+        self.lstm_layers = 1
 
         self.conv1 = nn.Conv2d(in_channels=3, out_channels=64, kernel_size=5, padding=1, stride=1)
         self.bn1 = nn.BatchNorm2d(64)
@@ -51,7 +51,7 @@ class StringNet(nn.Module):
         self.bn_res3 = nn.BatchNorm2d(512)
 
         self.lstm = nn.LSTM(227328, self.hidden_dim, num_layers=self.lstm_layers, bias=True,
-                            bidirectional=self.bidirectional, dropout=0.5)
+                            bidirectional=self.bidirectional)
 
         self.fc2 = nn.Linear(self.hidden_dim * self.directions, n_classes)
         # self.fc2 = nn.Linear(self.hidden_dim, n_classes)
