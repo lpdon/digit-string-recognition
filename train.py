@@ -179,7 +179,7 @@ def train(args: Namespace, seed: int = 0, verbose: bool = False) -> Tuple[List[D
     # Load dataset and create data loaders
     dataloaders = create_dataloader(args, verbose)
 
-    seq_length = 12
+    seq_length = 15
 
     if args.load_path is not None and Path(args.load_path).is_file():
         print("Loading model weights from: " + args.load_path)

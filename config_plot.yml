@@ -1,8 +1,12 @@
 columns : 
+        - time
+        - avg_dist
         - avg_loss
-        - accuracy
+        - val_avg_dist
         - val_avg_loss
+        - accuracy
         - val_accuracy
 log : train_log.txt
 refresh : True
-multi : False
+multi : True
+refresh_time : 2
