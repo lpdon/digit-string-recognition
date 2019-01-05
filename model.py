@@ -44,17 +44,17 @@ class StringNet(nn.Module):
         self.bn_res2 = nn.BatchNorm2d(64)
         self.pool3 = nn.MaxPool2d(2)
 
-        self.conv8 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding=1)
+        self.conv8 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding=1, stride=2)
         self.bn8 = nn.BatchNorm2d(128)
         self.conv9 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1)
         self.bn9 = nn.BatchNorm2d(128)
         self.conv10 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1)
         self.bn10 = nn.BatchNorm2d(128)
-        self.res_conv3 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=1, padding=0)
+        self.res_conv3 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=1, padding=0, stride=2)
         self.bn_res3 = nn.BatchNorm2d(128)
         self.pool4 = nn.MaxPool2d(2)
 
-        self.lstm = nn.LSTM(128 * 1 * 13, self.hidden_dim, num_layers=self.lstm_layers, bias=True,
+        self.lstm = nn.LSTM(128 * 3 * 9, self.hidden_dim, num_layers=self.lstm_layers, bias=True,
                             bidirectional=self.bidirectional)
 
         self.fc2 = nn.Linear(self.hidden_dim * self.directions, n_classes)
@@ -95,7 +95,7 @@ class StringNet(nn.Module):
         x = F.relu(x.add(self.bn_res3(self.res_conv3(res3))))
         x = self.pool4(x)
 
-        print(x.shape)
+        # print(x.shape)
 
         x = x.view(x.size(0), -1)  # flatten
 
