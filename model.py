@@ -50,25 +50,26 @@ class StringNet(nn.Module):
         self.bn3 = nn.BatchNorm2d(64)
         
         self.res_block1 = ResBlock(64, 128)
-        self.res_block2 = ResBlock(128, 128)
+        # self.res_block2 = ResBlock(128, 128)
 
         self.res_block3 = ResBlock(128, 256)
-        self.res_block4 = ResBlock(256, 256)
+        # self.res_block4 = ResBlock(256, 256)
         # self.res_block5 = ResBlock(256, 256)
 
         self.res_block6 = ResBlock(256, 512)
-        self.res_block7 = ResBlock(512, 512)
+        # self.res_block7 = ResBlock(512, 512)
         # self.res_block8 = ResBlock(512, 512)
 
-        self.lstm_forward = nn.LSTM(5120, self.hidden_dim, num_layers=self.lstm_layers, bias=True, 
+        self.lstm_forward = nn.LSTM(3072, self.hidden_dim, num_layers=self.lstm_layers, bias=True, 
                                     dropout=0.5)
 
-        self.lstm_backward = nn.LSTM(5120, self.hidden_dim, num_layers=self.lstm_layers, bias=True, 
+        self.lstm_backward = nn.LSTM(3072, self.hidden_dim, num_layers=self.lstm_layers, bias=True, 
                                     dropout=0.5)
 
-        self.fc2 = nn.Linear(self.hidden_dim * self.directions, n_classes)
-        # self.fc2 = nn.Linear(self.hidden_dim, n_classes)
-        self.dropout5 = nn.Dropout(p=0.5)
+        self.fc1 = nn.Linear(self.hidden_dim * self.directions, 100)
+        self.dropout = nn.Dropout(p=0.5)
+        self.fc2 = nn.Linear(100, n_classes)
+        self.fc2 = nn.Linear(self.hidden_dim, n_classes)        
 
     def init_hidden(self, input_length):
         # The axes semantics are (num_layers * num_directions, minibatch_size, hidden_dim)
@@ -87,50 +88,29 @@ class StringNet(nn.Module):
 
         x = F.relu(self.bn2(self.conv2(x)))
         x = self.bn3(self.conv3(x))
-        x = sum1 = F.relu(x.add(res1))        
+        x = F.relu(x.add(res1))        
 
         x = self.res_block1(x)
-        x = self.res_block2(x)
+        # x = self.res_block2(x)
 
         x = self.res_block3(x)
-        x = self.res_block4(x)
+        # x = self.res_block4(x)
         # x = self.res_block5(x)
         
         x = self.res_block6(x)
-        x = self.res_block7(x)
+        # x = self.res_block7(x)
         # x = self.res_block8(x)
 
-        x = x.view(x.size(0), -1)  # flatten
-
-        # features = x.view(1, current_batch_size, -1).repeat(self.seq_length, 1, 1)
-        features = x.view(1, current_batch_size, -1)
-        zeros = torch.zeros_like(x).repeat(self.seq_length - 1, 1, 1)
-
-        features = torch.cat((features, zeros), 0)
+        features = x.permute(3, 0, 1, 2).view(self.seq_length, current_batch_size, -1)
         hidden = self.init_hidden(current_batch_size)
-
-        # print(features)
-        # print(features.shape)
-        # print(features.flip(0))
-        # assert False
 
         outs1, _ = self.lstm_forward(features, hidden)
         outs2, _ = self.lstm_backward(features.flip(0), hidden)
-
-        # print(outs1)
-        # print(outs2)
-        # print(outs1.shape)
-        # assert False
-
         outs = outs1.add(outs2.flip(0))
 
-        # print(outs.shape)
-        # assert False
-
-        # outs = outs[:, :, :self.hidden_dim].add(outs[:, :, self.hidden_dim:])
-        # print(outs.shape)
-
         # Decode the hidden state of the last time step
+        outs = self.fc1(outs)
+        outs = self.dropout(outs)
         outs = self.fc2(outs)
         outs = F.log_softmax(outs, 2)
 

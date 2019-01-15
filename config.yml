@@ -1,7 +1,7 @@
 data : "ORAND-CAR-2014/CAR-A/"
 train_val_split: 0.8
-epochs: 1500
-batch_size: 32
+epochs: 100
+batch_size: 16
 lr : 1.0e-4
 verbose: True
 log: train_log.txt

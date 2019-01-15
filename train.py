@@ -26,7 +26,7 @@ def create_parser():
                         help="Path to the root folder of the CAR-{A,B} dataset.")
     parser.add_argument("-e", "--epochs", type=int, default=50,
                         help="Number of epochs to train the model.")
-    parser.add_argument("--target-size", "--is", nargs=2, type=int, default=(100, 300),
+    parser.add_argument("--target-size", "--is", nargs=2, type=int, default=(50, 120),
                         help="Y and X size to which the images should be resized.")
     parser.add_argument("--batch-size", "--bs", type=int, default=4,
                         help="Batch size for training and testing.")
@@ -114,7 +114,7 @@ def build_model(n_classes: int, seq_length: int, batch_size: int) -> StringNet:
 
 
 def loss_func():
-    return nn.CTCLoss(blank=10, reduction='mean')
+    return nn.CTCLoss(blank=10, reduction='sum')
 
 
 def set_seed(seed: int) -> None:
