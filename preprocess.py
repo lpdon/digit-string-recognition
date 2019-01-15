@@ -39,7 +39,16 @@ def load_image(arg_file):
   x1, y1, _, _ = contours_coords[0]
   x2, y2, w2, h2 = contours_coords[-1]
 
-  img2 = img[y1:y2+h2, x1:x2+w2]
+  x_start = max(x1 - 5,0)
+  y_start = max(y1 - 5,0)
+
+  x_end = min(x2+w2 + 5,img.shape[1])
+  y_end = min(y2+h2 + 5,img.shape[0])
+
+  # print(img.shape)
+  # assert False
+
+  img2 = img[y_start:y_end, x_start:x_end]
   
   rsz_h, rsz_w, _ = img.shape
   img2 = cv2.resize(img2, (rsz_w, rsz_h))
