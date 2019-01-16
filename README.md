@@ -18,3 +18,13 @@ Check `python train.py -h` for all possible options.
 ## Test Model
 
 TODO
+
+## Results
+
+After training 100 epochs:
+
+CAR-A
+Test         | avg_dist:   0.108615 | accuracy:   0.905127 | avg_loss:   0.485466
+
+CAR-B
+Test         | avg_dist:   0.079289 | accuracy:   0.928230 | avg_loss:   0.315886
