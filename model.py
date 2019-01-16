@@ -69,7 +69,6 @@ class StringNet(nn.Module):
         self.fc1 = nn.Linear(self.hidden_dim * self.directions, 100)
         self.dropout = nn.Dropout(p=0.5)
         self.fc2 = nn.Linear(100, n_classes)
-        self.fc2 = nn.Linear(self.hidden_dim, n_classes)        
 
     def init_hidden(self, input_length):
         # The axes semantics are (num_layers * num_directions, minibatch_size, hidden_dim)
