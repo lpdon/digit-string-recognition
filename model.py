@@ -20,7 +20,7 @@ class ResBlock(nn.Module):
         res = x
         x = F.relu(self.bn1(self.conv1(x)))
         x = self.bn2(self.conv2(x))
-        x = F.relu(x.add(self.bn_res(self.res_conv(res))))
+        x = x.add(self.bn_res(self.res_conv(res)))
 
         return x
 
@@ -88,7 +88,7 @@ class StringNet(nn.Module):
 
         x = F.relu(self.bn2(self.conv2(x)))
         x = self.bn3(self.conv3(x))
-        x = F.relu(x.add(res1))        
+        x = x.add(res1)       
 
         x = self.res_block1(x)
         # x = self.res_block2(x)
