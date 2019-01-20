@@ -29,10 +29,6 @@ class StringNet(nn.Module):
     def __init__(self, n_classes: int, seq_length: int, batch_size: int,
                  lstm_hidden_dim: int = 100, bidirectional: bool = False, lstm_layers: int = 2,
                  lstm_dropout: float = 0.5, fc2_dim: int = 100):
-        """
-        In the constructor we instantiate two nn.Linear modules and assign them as
-        member variables.
-        """
         super(StringNet, self).__init__()
 
         self.n_classes = n_classes
@@ -72,11 +68,6 @@ class StringNet(nn.Module):
                 torch.zeros(self.lstm_layers * self.directions, input_length, self.lstm_hidden_dim).to(device))
 
     def forward(self, x):
-        """
-        In the forward function we accept a Variable of input data and we must
-        return a Variable of output data. We can use Modules defined in the
-        constructor as well as arbitrary operators on Variables.
-        """
         current_batch_size = x.shape[0]
         x = F.relu(self.bn1(self.conv1(x)))
         x = res1 = self.pool1(x)
