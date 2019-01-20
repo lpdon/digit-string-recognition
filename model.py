@@ -26,7 +26,9 @@ class ResBlock(nn.Module):
 
 
 class StringNet(nn.Module):
-    def __init__(self, n_classes, seq_length, batch_size):
+    def __init__(self, n_classes: int, seq_length: int, batch_size: int,
+                 lstm_hidden_dim: int = 100, bidirectional: bool = False, lstm_layers: int = 2,
+                 lstm_dropout: float = 0.5, fc2_dim: int = 100):
         """
         In the constructor we instantiate two nn.Linear modules and assign them as
         member variables.
@@ -36,9 +38,9 @@ class StringNet(nn.Module):
         self.n_classes = n_classes
         self.seq_length = seq_length
         self.batch_size = batch_size
-        self.hidden_dim = 100
-        self.bidirectional = False
-        self.lstm_layers = 2
+        self.lstm_hidden_dim = lstm_hidden_dim
+        self.bidirectional = bidirectional
+        self.lstm_layers = lstm_layers
 
         self.conv1 = nn.Conv2d(in_channels=3, out_channels=64, kernel_size=5, padding=1, stride=1)
         self.bn1 = nn.BatchNorm2d(64)
@@ -60,20 +62,21 @@ class StringNet(nn.Module):
         # self.res_block7 = ResBlock(512, 512)
         # self.res_block8 = ResBlock(512, 512)
 
-        self.lstm_forward = nn.LSTM(3072, self.hidden_dim, num_layers=self.lstm_layers, bias=True, 
-                                    dropout=0.5)
+        self.lstm_forward = nn.LSTM(3072, self.lstm_hidden_dim, num_layers=self.lstm_layers, bias=True,
+                                    dropout=lstm_dropout)
 
-        self.lstm_backward = nn.LSTM(3072, self.hidden_dim, num_layers=self.lstm_layers, bias=True, 
-                                    dropout=0.5)
+        if self.bidirectional:
+            self.lstm_backward = nn.LSTM(3072, self.lstm_hidden_dim, num_layers=self.lstm_layers, bias=True,
+                                         dropout=lstm_dropout)
 
-        self.fc1 = nn.Linear(self.hidden_dim * self.directions, 100)
+        self.fc1 = nn.Linear(self.lstm_hidden_dim * self.directions, fc2_dim)
         self.dropout = nn.Dropout(p=0.5)
-        self.fc2 = nn.Linear(100, n_classes)
+        self.fc2 = nn.Linear(fc2_dim, n_classes)
 
     def init_hidden(self, input_length):
         # The axes semantics are (num_layers * num_directions, minibatch_size, hidden_dim)
-        return (torch.zeros(self.lstm_layers * self.directions, input_length, self.hidden_dim).to(device),
-                torch.zeros(self.lstm_layers * self.directions, input_length, self.hidden_dim).to(device))
+        return (torch.zeros(self.lstm_layers * self.directions, input_length, self.lstm_hidden_dim).to(device),
+                torch.zeros(self.lstm_layers * self.directions, input_length, self.lstm_hidden_dim).to(device))
 
     def forward(self, x):
         """
@@ -104,8 +107,11 @@ class StringNet(nn.Module):
         hidden = self.init_hidden(current_batch_size)
 
         outs1, _ = self.lstm_forward(features, hidden)
-        outs2, _ = self.lstm_backward(features.flip(0), hidden)
-        outs = outs1.add(outs2.flip(0))
+        if self.bidirectional:
+            outs2, _ = self.lstm_backward(features.flip(0), hidden)
+            outs = outs1.add(outs2.flip(0))
+        else:
+            outs = outs1
 
         # Decode the hidden state of the last time step
         outs = self.fc1(outs)

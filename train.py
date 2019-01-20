@@ -74,10 +74,11 @@ def parse_args():
     return args
 
 
-def create_dataloader(args: Namespace, verbose: bool = False) -> Dict[str, DataLoader]:
+def create_dataloader(data_path, target_size, train_val_split, batch_size,
+                      verbose: bool = False) -> Dict[str, DataLoader]:
     # Data augmentation and normalization for training
     # Just normalization for validation
-    width, height = args.target_size
+    width, height = target_size
     data_transforms = {
         'train': transforms.Compose([
             transforms.Resize((width, height)),
@@ -94,23 +95,24 @@ def create_dataloader(args: Namespace, verbose: bool = False) -> Dict[str, DataL
     }
 
     # Load dataset
-    dataset = CAR(args.data, transform=data_transforms, train_val_split=args.train_val_split, verbose=verbose)
+    dataset = CAR(data_path, transform=data_transforms, train_val_split=train_val_split, verbose=verbose)
     if verbose:
         print(dataset)
 
     # Create training and validation dataloaders
+    loader_names = ['train', 'test']
+    if train_val_split < 1.0:
+        loader_names.append('val')
     dataloaders_dict = {
         x: DataLoader(dataset.subsets[x],
-                      batch_size=args.batch_size,
+                      batch_size=batch_size,
                       shuffle=True,
                       num_workers=4
-                      ) for x in ['train', 'test', 'val']
+                      ) for x in loader_names
     }
     return dataloaders_dict
 
 
-def build_model(n_classes: int, seq_length: int, batch_size: int) -> StringNet:
-    return StringNet(n_classes, seq_length, batch_size)
 
 
 def loss_func():
@@ -173,30 +175,49 @@ def calc_acc(output, targets: List[str]):
     return acc
 
 
-def train(args: Namespace, seed: int = 0, verbose: bool = False) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+def run(args: Namespace, seed: int = 0, verbose: bool = False) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     set_seed(seed)
-
-    # Load dataset and create data loaders
-    dataloaders = create_dataloader(args, verbose)
-
-    seq_length = 15
+    timer = Timer()
+    timer.start()
+    seq_length = 15  # TODO: make this a parameter
 
     if args.load_path is not None and Path(args.load_path).is_file():
         print("Loading model weights from: " + args.load_path)
         model = torch.load(args.load_path)
     else:
-        model = build_model(11, seq_length, args.batch_size).to(device)
+        model = StringNet(11, seq_length, args.batch_size).to(device)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    # Load dataset and create data loaders
+    dataloaders = create_dataloader(args.data, target_size=args.target_size,
+                                    train_val_split=args.train_val_split,
+                                    batch_size=args.batch_size, verbose=verbose)
+
+    # Train
+    history = train(model, dataloaders['train'], dataloaders.get('val', None), lr=args.lr, epochs=args.epochs,
+                    log_path=args.log, save_path=args.save_path, verbose=verbose)
+
+    # Test
+    test_results = test(model, dataloaders['test'], verbose)
+    print("Test         | " + format_status_line(test_results))
+
+    timer.stop()
+    test_results["total_training_time"] = timer.total()
+    return history, test_results
+
+
+def train(model: StringNet, train_data, val_data=None, lr=1e-4, epochs=100,
+          log_path: str = None, save_path: str = None,
+          verbose: bool = False) -> List[Dict[str, Any]]:
+    # TODO: Early stopping
+
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     floss = loss_func()
 
-    # Train here
     history = []
-    phase = 'train'
     batch_timer = Timer()
     epoch_timer = Timer()
-    total_batches = len(dataloaders[phase])
-    for epoch in range(args.epochs):
+    total_batches = len(train_data)
+    for epoch in range(epochs):
         model.train()
         epoch_timer.start()
         batch_timer.reset()
@@ -204,7 +225,7 @@ def train(args: Namespace, seed: int = 0, verbose: bool = False) -> Tuple[List[D
         total_loss = num_samples = total_distance = total_accuracy = 0
         dummy_images = dummy_batch_targets = None
 
-        for batch_num, (image, str_targets) in enumerate(dataloaders[phase]):
+        for batch_num, (image, str_targets) in enumerate(train_data):
             batch_timer.start()
             # string to individual ints
             int_targets = [[int(c) for c in gt] for gt in str_targets]
@@ -242,7 +263,11 @@ def train(args: Namespace, seed: int = 0, verbose: bool = False) -> Tuple[List[D
             print("Train examples: ")
             print(model(dummy_images).argmax(2)[:, :10], dummy_batch_targets[:10])
 
-        val_results = test(model, dataloaders['val'], verbose)
+        if val_data is not None:
+            val_results = test(model, val_data, verbose)
+        else:
+            val_results = {}
+
         history_item = {}
         history_item['epoch'] = epoch + 1
         history_item['avg_dist'] = total_distance / num_samples
@@ -255,18 +280,13 @@ def train(args: Namespace, seed: int = 0, verbose: bool = False) -> Tuple[List[D
         status_line = format_status_line(history_item)
         print(status_line)
 
-        write_to_csv(history_item, args.log, write_header=epoch == 0, append=epoch != 0)
+        if log_path is not None:
+            write_to_csv(history_item, log_path, write_header=epoch == 0, append=epoch != 0)
 
-        if args.save_path is not None:
-            torch.save(model, args.save_path)
+        if save_path is not None:
+            torch.save(model, save_path)
 
-    # Test here
-    test_results = test(model, dataloaders['test'], verbose)
-    status_line = format_status_line(test_results)
-    print("Test         | " + status_line)
-    test_results["total_training_time"] = epoch_timer.total()
-    torch.save(model.state_dict(), './model.pth')
-    return history, test_results
+    return history
 
 
 def test(model: nn.Module, dataloader: DataLoader, verbose: bool = False) -> Dict[str, Any]:
@@ -308,10 +328,10 @@ def test(model: nn.Module, dataloader: DataLoader, verbose: bool = False) -> Dic
 if __name__ == "__main__":
     args = parse_args()
     if len(args.seed) == 1:
-        train(args, seed=args.seed[0], verbose=args.verbose)
+        run(args, seed=args.seed[0], verbose=args.verbose)
     else:
         # Get the results for every seed
-        results = [train(args, seed=seed, verbose=args.verbose) for seed in args.seed]
+        results = [run(args, seed=seed, verbose=args.verbose) for seed in args.seed]
         results = [result[1] for result in results]
         # Create dictionary to get a mapping from metric_name -> array of results of that metric
         # e.g. { 'accuracy': [0.67, 0.68] }
