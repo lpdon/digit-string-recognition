@@ -52,15 +52,8 @@ class StringNet(nn.Module):
         self.bn3 = nn.BatchNorm2d(64)
         
         self.res_block1 = ResBlock(64, 128)
-        # self.res_block2 = ResBlock(128, 128)
-
-        self.res_block3 = ResBlock(128, 256)
-        # self.res_block4 = ResBlock(256, 256)
-        # self.res_block5 = ResBlock(256, 256)
-
-        self.res_block6 = ResBlock(256, 512)
-        # self.res_block7 = ResBlock(512, 512)
-        # self.res_block8 = ResBlock(512, 512)
+        self.res_block2 = ResBlock(128, 256)
+        self.res_block3 = ResBlock(256, 512)
 
         self.lstm_forward = nn.LSTM(3072, self.lstm_hidden_dim, num_layers=self.lstm_layers, bias=True,
                                     dropout=lstm_dropout)
@@ -93,15 +86,8 @@ class StringNet(nn.Module):
         x = F.relu(x.add(res1))        
 
         x = self.res_block1(x)
-        # x = self.res_block2(x)
-
+        x = self.res_block2(x)
         x = self.res_block3(x)
-        # x = self.res_block4(x)
-        # x = self.res_block5(x)
-        
-        x = self.res_block6(x)
-        # x = self.res_block7(x)
-        # x = self.res_block8(x)
 
         features = x.permute(3, 0, 1, 2).view(self.seq_length, current_batch_size, -1)
         hidden = self.init_hidden(current_batch_size)
