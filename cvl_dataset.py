@@ -16,55 +16,35 @@ from dataset import train_val_datasets, pil_loader, accimage_loader, default_loa
 def discover_dataset(dir: str, verbose: bool = True) -> Tuple[List[Tuple[str, str]], Dict[str, List[str]]]:
     images = []
     subset_map = {}
-    dir = os.path.expanduser(dir)
+    root_dir = os.path.expanduser(dir)
     idx = 0
-    for subset_gt_file in sorted(os.listdir(dir)):
-        gt_path = os.path.join(dir, subset_gt_file)
-        if not os.path.isfile(gt_path) or not gt_path.endswith(".txt"):
-            continue
-        subset_name = subset_gt_file[:-7]
 
-        # Assert that corresponding folder exists
-        d = gt_path[:-6] + "images"
-        if not os.path.isdir(d):
-            warn("Found gt-file without corresponding folder: " + subset_name)
-            continue
-        if verbose:
-            print("Found subset: " + subset_name)
+    dirs = ["train", "test"]
+
+    for dir in dirs:
         indices = []
-        with open(gt_path, "r") as gt_f:
-            for line in gt_f.readlines():
-                im_file, gt = line.split(sep="\t")
-                gt = gt.strip()
-                im_path = os.path.join(d, im_file)
-                if not os.path.isfile(im_path):
-                    warn("Missing image in file system "
-                         "which is referenced in gt-file. ({})".format(im_path))
-                item = (im_path, gt)
-                images.append(item)
-                indices.append(idx)
-                idx += 1
+        d = os.path.join(root_dir, dir)
+        for im_file in os.listdir(d):
+            gt = im_file.split("-")[0]
+            im_path = os.path.join(d, im_file)
+            item = (im_path, gt)
+            images.append(item)
+            indices.append(idx)
+            idx += 1
+            print(item)
         if verbose:
             print("Subset had {} files in it.".format(len(indices)))
-        subset_map[subset_name] = indices
+        subset_map[dir] = indices
+
     return images, subset_map
+    
 
-
-class CAR(data.Dataset):
+class CVL(data.Dataset):
     """A generic data loader where the samples are arranged in this way: ::
 
-        root/train_images/xxx.ext
-        root/train_images/xxy.ext
-        root/train_images/xxz.ext
-        root/train_gt.txt
+        root/train/gt-id-xxt.ext
 
-        root/test_images/123.ext
-        root/test_images/nsdf3.ext
-        root/test_images/asd932_.ext
-        root/test_gt.txt
-        The folder in which the sample is stored corresponds to its subset.
-        The gt file must contain all image file names and ground truths of the subset
-        in a 2 column tab-separated text file.
+        root/test/gt-id-xxt.ext
 
     Args:
         root (string): Root directory path.

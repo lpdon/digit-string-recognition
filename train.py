@@ -13,6 +13,7 @@ from torch.utils.data import DataLoader
 from torchvision.transforms import transforms
 
 from car_dataset import CAR
+from cvl_dataset import CVL
 from model import StringNet
 from timer import Timer
 from util import concat, length_tensor, format_status_line, write_to_csv
@@ -95,7 +96,10 @@ def create_dataloader(data_path, target_size, train_val_split, batch_size,
     }
 
     # Load dataset
-    dataset = CAR(data_path, transform=data_transforms, train_val_split=train_val_split, verbose=verbose)
+    if "car" in data_path.lower():
+        dataset = CAR(data_path, transform=data_transforms, train_val_split=train_val_split, verbose=verbose)
+    else:
+        dataset = CVL(data_path, transform=data_transforms, train_val_split=train_val_split, verbose=verbose)
     if verbose:
         print(dataset)
 
