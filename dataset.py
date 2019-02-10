@@ -1,14 +1,10 @@
-import os
-import os.path
-from typing import Tuple, List, Dict
-from warnings import warn
+from typing import Tuple
 
 import numpy as np
-import torch
 import torch.utils.data as data
 from PIL import Image
 from sklearn.model_selection import train_test_split
-from torch.utils.data import Subset, Dataset, DataLoader
+from torch.utils.data import Subset, Dataset
 
 
 def train_val_datasets(dataset: Dataset, val_split: float = 0.5, shuffle: bool = True) -> Tuple[Dataset, Dataset]:

@@ -12,11 +12,11 @@ from torch.backends import cudnn
 from torch.utils.data import DataLoader
 from torchvision.transforms import transforms
 
-from car_dataset import CAR
+from car_dataset import CAR, CAR_A_MEAN, CAR_A_STD
 from cvl_dataset import CVL
 from model import StringNet
 from timer import Timer
-from util import concat, length_tensor, format_status_line, write_to_csv
+from util import concat, length_tensor, format_status_line, write_to_csv, ImageWriter
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -47,6 +47,10 @@ def create_parser():
                         help="Path to the model destination. If empty, model won't be saved.")
     parser.add_argument("--load_path", required=False, type=str, default="",
                         help="Path to the saved model. If empty, model won't be loaded.")
+    parser.add_argument("--mean", nargs=3, type=int, default=CAR_A_MEAN,
+                        help="Mean of RGB values of images in the dataset. Will be used for normalization.")
+    parser.add_argument("--std", nargs=3, type=int, default=CAR_A_STD,
+                        help="Standard deviation of RGB of images in the dataset. Will be used for normalization.")
     return parser
 
 
@@ -76,6 +80,7 @@ def parse_args():
 
 
 def create_dataloader(data_path, target_size, train_val_split, batch_size,
+                      mean=CAR_A_MEAN, std=CAR_A_STD,
                       verbose: bool = False) -> Dict[str, DataLoader]:
     # Data augmentation and normalization for training
     # Just normalization for validation
@@ -86,12 +91,12 @@ def create_dataloader(data_path, target_size, train_val_split, batch_size,
             transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.5, hue=0.5),
             transforms.RandomAffine(degrees=10, translate=(0.05, 0.05), scale=(0.95, 1.05), shear=10),
             transforms.ToTensor(),
-            transforms.Normalize([0.6205, 0.6205, 0.6205], [0.1343, 0.1343, 0.1343])
+            transforms.Normalize(mean=mean, std=std)
         ]),
         'test': transforms.Compose([
             transforms.Resize((width, height)),
             transforms.ToTensor(),
-            transforms.Normalize([0.6205, 0.6205, 0.6205], [0.1343, 0.1343, 0.1343])
+            transforms.Normalize(mean=mean, std=std)
         ]),
     }
 
@@ -115,8 +120,6 @@ def create_dataloader(data_path, target_size, train_val_split, batch_size,
                       ) for x in loader_names
     }
     return dataloaders_dict
-
-
 
 
 def loss_func():
@@ -194,6 +197,7 @@ def run(args: Namespace, seed: int = 0, verbose: bool = False) -> Tuple[List[Dic
     # Load dataset and create data loaders
     dataloaders = create_dataloader(args.data, target_size=args.target_size,
                                     train_val_split=args.train_val_split,
+                                    mean=args.mean, std=args.std,
                                     batch_size=args.batch_size, verbose=verbose)
 
     # Train
@@ -201,7 +205,8 @@ def run(args: Namespace, seed: int = 0, verbose: bool = False) -> Tuple[List[Dic
                     log_path=args.log, save_path=args.save_path, verbose=verbose)
 
     # Test
-    test_results = test(model, dataloaders['test'], verbose)
+    # Replace None with this image writer to display failure cases: ImageWriter('output/', mean=args.mean, std=args.std)
+    test_results = test(model, dataloaders['test'], verbose=verbose, failure_case_writer=None)
     print("Test         | " + format_status_line(test_results))
 
     timer.stop()
@@ -293,7 +298,8 @@ def train(model: StringNet, train_data, val_data=None, lr=1e-4, epochs=100,
     return history
 
 
-def test(model: nn.Module, dataloader: DataLoader, verbose: bool = False) -> Dict[str, Any]:
+def test(model: nn.Module, dataloader: DataLoader, verbose: bool = False,
+         failure_case_writer: ImageWriter = None) -> Dict[str, Any]:
     model.eval()
     with torch.no_grad():
         dummy_images = dummy_batch_targets = None
@@ -322,6 +328,12 @@ def test(model: nn.Module, dataloader: DataLoader, verbose: bool = False) -> Dic
             if verbose:
                 dummy_images = image
                 dummy_batch_targets = str_targets
+
+            if failure_case_writer is not None:
+                preds = postproc_output(output)
+                for pred, gt, im in zip(preds, str_targets, image):
+                    if not pred == gt:
+                        failure_case_writer.write(im, "{}_vs._{}.png".format(pred if pred else "<empty>", gt))
         if verbose:
             print("Validation example:")
             print(model(dummy_images).argmax(2)[:, :10], dummy_batch_targets[:10])
