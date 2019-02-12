@@ -1,16 +1,13 @@
 import os
 import os.path
 from typing import Tuple, List, Dict
-from warnings import warn
 
-import numpy as np
 import torch
 import torch.utils.data as data
 from PIL import Image
-from sklearn.model_selection import train_test_split
-from torch.utils.data import Subset, Dataset, DataLoader
+from torch.utils.data import Subset, DataLoader
 
-from dataset import train_val_datasets, pil_loader, accimage_loader, default_loader, map_subset_name, TransformSubset
+from dataset import train_val_datasets, default_loader, map_subset_name, TransformSubset
 
 
 def discover_dataset(dir: str, verbose: bool = True) -> Tuple[List[Tuple[str, str]], Dict[str, List[str]]]:

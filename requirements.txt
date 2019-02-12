@@ -5,3 +5,4 @@ torchvision
 python-Levenshtein
 PyYAML
 matplotlib
+Pillow<5.4.0
