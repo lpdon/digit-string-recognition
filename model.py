@@ -27,7 +27,7 @@ class ResBlock(nn.Module):
 
 class StringNet(nn.Module):
     def __init__(self, n_classes: int, seq_length: int, batch_size: int,
-                 lstm_hidden_dim: int = 100, bidirectional: bool = False, lstm_layers: int = 2,
+                 lstm_hidden_dim: int = 100, bidirectional: bool = True, lstm_layers: int = 2,
                  lstm_dropout: float = 0.5, fc2_dim: int = 100):
         super(StringNet, self).__init__()
 
@@ -51,14 +51,10 @@ class StringNet(nn.Module):
         self.res_block2 = ResBlock(128, 256)
         self.res_block3 = ResBlock(256, 512)
 
-        self.lstm_forward = nn.LSTM(3072, self.lstm_hidden_dim, num_layers=self.lstm_layers, bias=True,
-                                    dropout=lstm_dropout)
+        self.lstm = nn.LSTM(3072, self.lstm_hidden_dim, num_layers=self.lstm_layers, bias=True,
+                                    dropout=lstm_dropout, bidirectional=self.bidirectional)
 
-        if self.bidirectional:
-            self.lstm_backward = nn.LSTM(3072, self.lstm_hidden_dim, num_layers=self.lstm_layers, bias=True,
-                                         dropout=lstm_dropout)
-
-        self.fc1 = nn.Linear(self.lstm_hidden_dim * self.directions, fc2_dim)
+        self.fc1 = nn.Linear(self.lstm_hidden_dim, fc2_dim)
         self.dropout = nn.Dropout(p=0.5)
         self.fc2 = nn.Linear(fc2_dim, n_classes)
 
@@ -83,12 +79,14 @@ class StringNet(nn.Module):
         features = x.permute(3, 0, 1, 2).view(self.seq_length, current_batch_size, -1)
         hidden = self.init_hidden(current_batch_size)
 
-        outs1, _ = self.lstm_forward(features, hidden)
+        outs, _ = self.lstm(features, hidden)
+
         if self.bidirectional:
-            outs2, _ = self.lstm_backward(features.flip(0), hidden)
-            outs = outs1.add(outs2.flip(0))
-        else:
-            outs = outs1
+            outs = outs.view(self.seq_length, current_batch_size, 2, self.lstm_hidden_dim)
+            output_forward, output_backward = torch.chunk(outs, 2, 2)
+            output_forward = output_forward.view(self.seq_length, current_batch_size, -1)
+            output_backward = output_backward.view(self.seq_length, current_batch_size, -1)
+            outs = output_forward.add(output_backward)
 
         # Decode the hidden state of the last time step
         outs = self.fc1(outs)
