@@ -1,0 +1,64 @@
+\documentclass[a4paper]{article}
+\usepackage{iwslt15,amssymb,amsmath,epsfig}
+\setcounter{page}{1}
+\sloppy		% better line breaks
+%\ninept
+%SM below a registered trademark definition
+\def\reg{{\rm\ooalign{\hfil
+     \raise.07ex\hbox{\scriptsize R}\hfil\crcr\mathhexbox20D}}}
+
+%% \newcommand{\reg}{\textsuperscript{\textcircled{\textsc r}}}
+
+\title{Digit String Recognition}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Please make sure to keep technical paper submissions anonymous  !
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\name{Firstname Lastname}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% If multiple authors, uncomment and edit the lines shown below.       %%
+%% Note that each line must be emphasized {\em } by itself.             %%
+%% (by Stephen Martucci, author of spconf.sty).                         %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\makeatletter
+\def\name#1{\gdef\@name{#1\\}}
+\makeatother
+\name{{\em Lucas Steinmann, Leandro Piekarski, Hesham Hendy,}\\
+      {\em Manuel Olk}}
+%%%%%%%%%%%%%%% End of required multiple authors changes %%%%%%%%%%%%%%%%%
+
+\address{Praktikum Neuronale Netze  \\Karlsruhe Institute of Technology, Germany \\
+%{\small \tt firstname.lastname@iwslt.org}
+}
+%
+\begin{document}
+\maketitle
+%
+\begin{abstract}
+This is a layout specification and template
+definition for the paper of the IWSLT 2015 Conference. 
+The format is essentially the one used for the IEEE ICASSP conferences.
+\end{abstract}
+
+
+%
+\input{introduction}
+
+\input{theory}
+
+\input{model}
+
+\input{evaluation}
+
+\section{Acknowledgements}
+The IWSLT 2015 organizing committee would like to thank the
+organizing committees of INTERSPEECH 2004 for their
+help and for kindly providing the template files.
+
+%
+\bibliographystyle{IEEEtran}
+
+\input{bib}
+
+\end{document}
+
