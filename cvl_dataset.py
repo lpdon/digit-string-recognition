@@ -31,7 +31,6 @@ def discover_dataset(dir: str, verbose: bool = True) -> Tuple[List[Tuple[str, st
             images.append(item)
             indices.append(idx)
             idx += 1
-            print(item)
         if verbose:
             print("Subset had {} files in it.".format(len(indices)))
         subset_map[dir] = indices
