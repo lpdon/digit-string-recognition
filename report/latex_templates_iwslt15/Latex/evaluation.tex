@@ -1,3 +1,58 @@
+\section{Evaluation}
+
+\begin{table}
+\caption{\label{table_zhan_interpretation} {\it Overall comparison between implementations.}}
+\vspace{2mm}
+\centerline{
+\begin{tabular}{*{4}{|c}|}
+\hline
+Methods & 
+CAR-A &
+CAR-B & 
+CVL\\
+\hline \hline 
+Zhan el al. 2017 & 0.8975 & 0.9114 & 0.2707 \\
+Our "interpretation" & 0.9014 & 0.9084 & 0.2550 \\
+\hline
+\end{tabular}}
+\end{table}
+
+\begin{table}
+\caption{\label{table_different_sets} {\it Performance on different sets.}}
+\vspace{2mm}
+\centerline{
+\begin{tabular}{*{4}{|c}|}
+\hline
+Tested / Trained & 
+CAR-A &
+CAR-B & 
+CVL\\
+\hline \hline 
+CAR-A & \textbf{0.9014} & 0.7315 & 0.002 \\
+CAR-B & 0.8434 & \textbf{0.9084} & 0.006 \\
+CVL & 0.3019 & \textbf{0.5804} & 0.2550 \\
+\hline
+\end{tabular}}
+\end{table}
+
+\begin{table}
+\caption{\label{table_fine_tuning} {\it Performance using more than one set + fine tuning.}}
+\vspace{2mm}
+\centerline{
+\begin{tabular}{*{3}{|c}|}
+\hline
+Tested / Trained & 
+CAR-A + CAR-B &
+CVL (fine tuning)\\
+\hline \hline 
+CAR-A & \textbf{0.9127} & 0.0565 \\
+CAR-B & \textbf{0.9408} & 0.4733 \\
+CVL & 0.5913 & \textbf{0.7579} \\
+\hline
+\end{tabular}}
+\end{table}
+
+
 \section{Conclusions}
 
 This paper has described a novel approach for doing wonderful stuff such as ...
