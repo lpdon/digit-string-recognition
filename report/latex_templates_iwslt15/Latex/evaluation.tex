@@ -75,6 +75,33 @@ CVL & 0.5913 & \textbf{0.7579} \\
 
 \subsection{Error cases}
 
+In order to have a better understanding of the mistakes the network makes, some of the errors during test are collected. Most of the errors fall into four classes. The first class is represented by Fig.~\ref{fig_error1}, in which the left border is misclassified as the digit "1", resulting in a prediction "175" versus label "75". Right borders can also be misclassified. A second class is as depicted by Fig.~\ref{fig_error2}, in which the digits cannot be easily classified correctly even by humans. In this case the network predicts "400" for a label "500". The third class of identified errors is illustrated by Fig.~\ref{fig_error3}. Due to the fact that the pictures do not include exclusively digits, symbols such as commas can be confused with the digit "1", despite the training to classify all strange symbols as "blank". The last error class is pictured by Fig.~\ref{fig_error4}. Given the CNN output, the input picture is divided in 15 parts to be classified by the RNN. A problem also occurs thereby if irrelevant symbols occupy too much space in a way that a single digit is too small inside one of these parts. For the example the prediction was "381", which suggests that the digits "29" are merged during the feature extraction. 
+
+\begin{figure}[t]
+    \centering
+  \subfloat[Border\label{fig_error1}]{%
+       \includegraphics[width=0.2\linewidth]{images/error1}}
+    \hfill
+  \subfloat[Bad digits\label{fig_error2}]{%
+        \includegraphics[width=0.2\linewidth]{images/error2}}
+    \hfill
+  \subfloat[Symbols\label{fig_error3}]{%
+        \includegraphics[width=0.2\linewidth]{images/error3}}
+    \hfill
+  \subfloat[Receptive field\label{fig_error4}]{%
+        \includegraphics[width=0.2\linewidth]{images/error4}} \\
+  \caption{{\it Examples of test errors}}
+  \label{fig_methods} 
+\end{figure}
+
+Most of these errors can be probably avoided by investing more time into preprocessing the images, which is neglected in this work in favor of an end-to-end approach. Any extra preprocessing for such images requires feature engineering to remove irrelevant symbols by for example, searching for contours which are more likely to belong to digits as in Fig.~\ref{fig_preproc}. As a consequence the deep learning model would require less effort and complexity.  
+
+\begin{figure}[t]
+%\centerline{\epsfig{figure=figure,width=40mm}}
+\centerline{\includegraphics[width=40mm]{images/preproc}}
+\caption{{\it Digit contour detection}.}  
+\label{fig_preproc}
+\end{figure}
 
 \section{Conclusions}
 
