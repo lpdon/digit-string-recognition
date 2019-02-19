@@ -103,6 +103,12 @@ Most of these errors can be probably avoided by investing more time into preproc
 \label{fig_preproc}
 \end{figure}
 
+\section{Lessons learned}
+
+Of the many lessons learned during the development of this work, the most important is to recognize when overfitting is happening. Divergences between training and validation performance tend to happen but if they are too big a thoroughly analysis of the possible causes is necessary. Data augmentation and regularization methods do help but are not enough to overcome highly divergent performances, which are more likely caused by a wrong approach. Models for more complex tasks have so many parameters that is easy for them to memorize the training set completely without any generalization capability given enough epochs. 
+
+A second lesson is to analyze carefully which type of information is passed to the LSTM input gates. Just reshaping tensors output by the CNN to fit the LSTM input shape without any reasonable criteria does not deliver any valuable results. At first it is not clear what to use as input in the presented problem since the sequence aspect is not instantly recognized as in problems which have for example image sequences as input or text sentences. Following the intuition of splitting the classification along the image width dimension, the LSTM time steps must also match this idea for learning effectively. 
+
 \section{Conclusions}
 
 This paper has described a novel approach for doing wonderful stuff such as ...
