@@ -36,7 +36,7 @@ The first database, named ORAND-CAR, is a real world database with 11719 images 
 
 CAR-A's training set consists of 2009 images whereas the testing set delivers 3784 images. In CAR-B there are 3000 training images and 2926 images for testing.
 
-The second database we worked on is called Computer Vision Lab Handwritten Digit String (CVL HDS). It contains handwritten digits of 300 different writers without any background noise. The training set includes only 10 different digit strings from about 125 writers which leads to overall 1262 images for training. In the testing set we have the same 10 digit strings from the remaining writers and 16 new strings from all 300 writers to reach 6698 testing images. CVL HDS provides us with large variability with respect to handwriting styles but lacks diversity in the digit strings themselves. Examples of the CVL HDS database are shown in Figure \ref{fig:cvl}.
+The second database we worked on is called Computer Vision Lab Handwritten Digit String (CVL HDS). It contains handwritten digits of 300 different writers without any background noise. The training set includes only 10 different digit strings from about 125 writers which leads to an overall amount of 1262 images for training. In the testing set we have the same 10 digit strings from the remaining writers and 16 new strings from all 300 writers to reach 6698 testing images. CVL HDS provides us with large variability with respect to handwriting styles but lacks diversity in the digit strings themselves. Examples of the CVL HDS database are shown in Figure \ref{fig:cvl}.
 
 \begin{figure}
   \includegraphics[width=\linewidth]{images/CVL-HDS-Splitted.png}
@@ -56,13 +56,15 @@ The datasets differ with respect to their string lengths. CVL has images with st
 \hline
 \multicolumn{1}{|l|}{} & & Training & & & Testing & \multicolumn{1}{l|}{}\\
 \multicolumn{1}{|l|}{len} & \multicolumn{1}{l|}{CAR-A} & \multicolumn{1}{l|}{CAR-B} & \multicolumn{1}{l|}{CVL} & \multicolumn{1}{l|}{CAR-A} & \multicolumn{1}{l|}{CAR-B} & \multicolumn{1}{l|}{CVL} \\ \hline
-2 & 36 & 0 & 0 & 22 & 0 & 0 \\
-3 & 387 & 5 & 0 & 204 & 0 & 0 \\
-4 & 1425 & 69 & 0 & 704 & 63 & 0 \\
-5 & 1475 & 1241 & 789 & 903 & 1200 & 125 \\
-6 & 363 & 1452 & 4144 & 145 & 1599 & 758 \\
-7 & 87 & 157 & 1765 & 29 & 137 & 379 \\
-8 & 11 & 2 & 0 & 2 & 1 & 0 \\
+2 & 22 & 0 & 0 & 36 & 0 & 0  \\
+3 & 204 & 0 & 0 & 387 & 5 & 0  \\
+4 & 704 & 63 & 0 & 1425 & 69 & 0  \\
+5 & 903 & 1200 & 125 & 1475 & 1241 & 789  \\
+6 & 145 & 1599 & 758 & 363 & 1452 & 4144  \\
+7 & 29 & 137 & 379 & 87 & 157 & 1765  \\
+8 & 2 & 1 & 0 & 11 & 2 & 0  \\
+\hline
+$\Sigma$ & 2009 & 3000 & 1262 & 3784 & 2926 & 6698  \\
 \hline
 \end{tabular}}
 \end{adjustbox}
