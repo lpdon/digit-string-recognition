@@ -51,17 +51,7 @@ class StringNet(nn.Module):
         self.res_block2 = ResBlock(128, 256)
         self.res_block3 = ResBlock(256, 512)
 
-        self.lstm = nn.LSTM(3072, self.lstm_hidden_dim, num_layers=self.lstm_layers, bias=True,
-                                    dropout=lstm_dropout, bidirectional=self.bidirectional)
-
-        self.fc1 = nn.Linear(self.lstm_hidden_dim, fc2_dim)
-        self.dropout = nn.Dropout(p=0.5)
-        self.fc2 = nn.Linear(fc2_dim, n_classes)
-
-    def init_hidden(self, input_length):
-        # The axes semantics are (num_layers * num_directions, minibatch_size, hidden_dim)
-        return (torch.zeros(self.lstm_layers * self.directions, input_length, self.lstm_hidden_dim).to(device),
-                torch.zeros(self.lstm_layers * self.directions, input_length, self.lstm_hidden_dim).to(device))
+        self.fc2 = nn.Linear(512 * 6, n_classes)
 
     def forward(self, x):
         current_batch_size = x.shape[0]
@@ -70,28 +60,15 @@ class StringNet(nn.Module):
 
         x = F.relu(self.bn2(self.conv2(x)))
         x = self.bn3(self.conv3(x))
-        x = F.relu(x.add(res1))        
+        x = F.relu(x.add(res1))
 
         x = self.res_block1(x)
         x = self.res_block2(x)
         x = self.res_block3(x)
 
-        features = x.permute(3, 0, 1, 2).view(self.seq_length, current_batch_size, -1)
-        hidden = self.init_hidden(current_batch_size)
+        features = x.permute(0, 3, 1, 2).view(current_batch_size, self.seq_length, -1)
 
-        outs, _ = self.lstm(features, hidden)
-
-        if self.bidirectional:
-            outs = outs.view(self.seq_length, current_batch_size, 2, self.lstm_hidden_dim)
-            output_forward, output_backward = torch.chunk(outs, 2, 2)
-            output_forward = output_forward.view(self.seq_length, current_batch_size, -1)
-            output_backward = output_backward.view(self.seq_length, current_batch_size, -1)
-            outs = output_forward.add(output_backward)
-
-        # Decode the hidden state of the last time step
-        outs = self.fc1(outs)
-        outs = self.dropout(outs)
-        outs = self.fc2(outs)
+        outs = self.fc2(features).permute(1, 0, 2)
         outs = F.log_softmax(outs, 2)
 
         return outs
