@@ -4,11 +4,15 @@ from typing import Tuple, List, Dict
 
 import torch
 import torch.utils.data as data
-from PIL import Image
+from PIL import Image, ImageFile
+
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 from torch.utils.data import Subset, DataLoader
 
 from dataset import train_val_datasets, default_loader, map_subset_name, TransformSubset
 
+CVL_MEAN = [0.9143, 0.9172, 0.9692]
+CVL_STD = [0.1387, 0.1352, 0.0563]
 
 def discover_dataset(dir: str, verbose: bool = True) -> Tuple[List[Tuple[str, str]], Dict[str, List[str]]]:
     images = []
@@ -28,7 +32,6 @@ def discover_dataset(dir: str, verbose: bool = True) -> Tuple[List[Tuple[str, st
             images.append(item)
             indices.append(idx)
             idx += 1
-            print(item)
         if verbose:
             print("Subset had {} files in it.".format(len(indices)))
         subset_map[dir] = indices

@@ -83,7 +83,10 @@ class StringNet(nn.Module):
 
         if self.bidirectional:
             outs = outs.view(self.seq_length, current_batch_size, 2, self.lstm_hidden_dim)
-            outs = outs.add(dim=2)
+            output_forward, output_backward = torch.chunk(outs, 2, 2)
+            output_forward = output_forward.view(self.seq_length, current_batch_size, -1)
+            output_backward = output_backward.view(self.seq_length, current_batch_size, -1)
+            outs = output_forward.add(output_backward)
 
         # Decode the hidden state of the last time step
         outs = self.fc1(outs)

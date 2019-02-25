@@ -9,21 +9,31 @@ import torch
 import torch.nn as nn
 import yaml
 from torch.backends import cudnn
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, ConcatDataset
 from torchvision.transforms import transforms
 
 from car_dataset import CAR, CAR_A_MEAN, CAR_A_STD
-from cvl_dataset import CVL
+from cvl_dataset import CVL, CVL_MEAN, CVL_STD
 from model import StringNet
 from timer import Timer
 from util import concat, length_tensor, format_status_line, write_to_csv, ImageWriter
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+mean_cache = {
+    'CVL': CVL_MEAN,
+    'CAR-A': CAR_A_MEAN,
+    # 'CAR_B': CAR_B_MEAN
+}
+std_cache = {
+    'CVL': CVL_STD,
+    'CAR-A': CAR_A_STD,
+    # 'CAR_B': CAR_B_STD
+}
 
 def create_parser():
     parser = ArgumentParser("Training script for Digit String Recognition PyTorch-Model.")
-    parser.add_argument("-d", "--data", type=str, required=False, default="",
+    parser.add_argument("-d", "--data", type=str, nargs='+', required=False, default="",
                         help="Path to the root folder of the CAR-{A,B} dataset.")
     parser.add_argument("-e", "--epochs", type=int, default=50,
                         help="Number of epochs to train the model.")
@@ -47,9 +57,9 @@ def create_parser():
                         help="Path to the model destination. If empty, model won't be saved.")
     parser.add_argument("--load_path", required=False, type=str, default="",
                         help="Path to the saved model. If empty, model won't be loaded.")
-    parser.add_argument("--mean", nargs=3, type=int, default=CAR_A_MEAN,
+    parser.add_argument("--mean", nargs='+', type=str, default=[CAR_A_MEAN,],
                         help="Mean of RGB values of images in the dataset. Will be used for normalization.")
-    parser.add_argument("--std", nargs=3, type=int, default=CAR_A_STD,
+    parser.add_argument("--std", nargs='+', type=str, default=[CAR_A_STD,],
                         help="Standard deviation of RGB of images in the dataset. Will be used for normalization.")
     return parser
 
@@ -57,6 +67,13 @@ def create_parser():
 def parse_args():
     parser = create_parser()
     args = parser.parse_args()
+
+    # Use cached value if a cached string (CAR_A or CVL) is specified
+    args.std = [std_cache[str(std)] if str(std) in std_cache else
+                tuple([float(v) for v in std.split()]) if isinstance(std, str) else std
+                for std in args.std]
+    args.mean = [mean_cache[str(mean)] if str(mean) in mean_cache else
+                 tuple([float(v) for v in mean.split()]) if isinstance(mean, str) else mean for mean in args.mean]
 
     if args.data is None and args.config_file is None:
         parser.error("Dataset or config file required.")
@@ -76,44 +93,57 @@ def parse_args():
         except yaml.YAMLError as exception:
             print(exception)
 
+    # Wrap data in list if it is not already, since config does not return a list if only one element is specified.
+    if not isinstance(args.data, list):
+        args.data = [args.data]
+
     return args
 
 
-def create_dataloader(data_path, target_size, train_val_split, batch_size,
-                      mean=CAR_A_MEAN, std=CAR_A_STD,
+def create_dataloader(data_paths, target_size, train_val_split, batch_size,
+                      means=(CAR_A_MEAN,), stds=(CAR_A_STD,),
                       verbose: bool = False) -> Dict[str, DataLoader]:
     # Data augmentation and normalization for training
     # Just normalization for validation
     width, height = target_size
-    data_transforms = {
-        'train': transforms.Compose([
-            transforms.Resize((width, height)),
-            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.5, hue=0.5),
-            transforms.RandomAffine(degrees=10, translate=(0.05, 0.05), scale=(0.95, 1.05), shear=10),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=mean, std=std)
-        ]),
-        'test': transforms.Compose([
-            transforms.Resize((width, height)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=mean, std=std)
-        ]),
-    }
+    if isinstance(data_paths, str):
+        data_paths = [data_paths]
+        means = [means]
+        stds = [stds]
+    assert len(data_paths) == len(means) == len(stds)
+    datasets = []
+    for data_path, mean, std in zip(data_paths, means, stds):
+        print(mean, std)
+        data_transforms = {
+            'train': transforms.Compose([
+                transforms.Resize((width, height)),
+                transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=4.0, hue=0.5),
+                transforms.RandomAffine(degrees=10, translate=(0.05, 0.05), scale=(0.95, 1.05), shear=10),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=mean, std=std)
+            ]),
+            'test': transforms.Compose([
+                transforms.Resize((width, height)),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=mean, std=std)
+            ]),
+        }
 
-    # Load dataset
-    if "car" in data_path.lower():
-        dataset = CAR(data_path, transform=data_transforms, train_val_split=train_val_split, verbose=verbose)
-    else:
-        dataset = CVL(data_path, transform=data_transforms, train_val_split=train_val_split, verbose=verbose)
-    if verbose:
-        print(dataset)
+        # Load dataset
+        if "car" in data_path.lower():
+            dataset = CAR(data_path, transform=data_transforms, train_val_split=train_val_split, verbose=verbose)
+        else:
+            dataset = CVL(data_path, transform=data_transforms, train_val_split=train_val_split, verbose=verbose)
+        if verbose:
+            print(dataset)
+        datasets.append(dataset)
 
     # Create training and validation dataloaders
     loader_names = ['train', 'test']
     if train_val_split < 1.0:
         loader_names.append('val')
     dataloaders_dict = {
-        x: DataLoader(dataset.subsets[x],
+        x: DataLoader(ConcatDataset([dataset.subsets[x] for dataset in datasets]),
                       batch_size=batch_size,
                       shuffle=True,
                       num_workers=4
@@ -197,7 +227,7 @@ def run(args: Namespace, seed: int = 0, verbose: bool = False) -> Tuple[List[Dic
     # Load dataset and create data loaders
     dataloaders = create_dataloader(args.data, target_size=args.target_size,
                                     train_val_split=args.train_val_split,
-                                    mean=args.mean, std=args.std,
+                                    means=args.mean, stds=args.std,
                                     batch_size=args.batch_size, verbose=verbose)
 
     # Train
