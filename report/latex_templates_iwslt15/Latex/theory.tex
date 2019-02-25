@@ -1,4 +1,4 @@
-\section{Connectionist Temporal Classification}
+\section{Connectionist Temporal Classification}\label{sec:ctc}
 
 The Loss has been calculated using CTC. It can be considered as output layer of Neural network to deal with the following main problems:
 \begin{itemize}
@@ -23,7 +23,7 @@ The probability $p( \pi | y )$ of a particular path is the product of all the so
 \end{equation}
 where y is the sequence produced by the recurrent layers from x. Then we should update the network through back propagation. By decoding, the function calculates the best path by taking the most likely character per time-step and undoes the encoding measures by first removing duplicate characters and then removing all blanks from the path and as a result remains the recognized text.
 
-\section{Recurrent Neural Network}
+\section{Recurrent Neural Network}\label{sec:rnn}
 Based on the human fact that we do not need to rethink from scratch rather building up on the available results, Recurrent Neural Network has been developed to solve this issue by the normal neural network using connected chunks of neural network. The information can be passed over the chunks in a loop intimately, but It shouldn’t go so far back to avoid gradient vanish problem during the parameter optimization especially by small number of Iterations. So LSTM should be used instead of RNN.The LSTM short of learning long-term dependencies does have the ability to remove or add information to the cell state, carefully regulated by 4 specified mechanism called gates:
 \begin{itemize}
 %\itemsep -1.3mm
