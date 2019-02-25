@@ -1,174 +1,36 @@
-\section{Page layout and style}
+\section{Connectionist Temporal Classification}
 
-Authors should should observe the following rules for page
-layout. A highly  recommended way to meet these requirements
-is to use a predefined template and check
-details against the corresponding example file.
-
-\subsection{First page}
-
-The first page should have the paper title, author(s), and affiliation(s)
-centered on the page across both columns. The remainder of the text 
-must be in the two-column format, staying within the indicated image 
-area. 
-
-\subsubsection{Paper Title}
-The paper title must be in boldface. All non-function words must be capitalized,
-and all other words in the title must be lower case. The paper title is centered
-across the top of the two columns on the first page as indicated above.
-
-\subsubsection{Authors' Name(s)}
-The authors' name(s) and affiliation(s) appear centered below the paper
-title. If space permits, include a mailing address here. The templates indicate
-the area where the title and author information should go. These items need not
-be confined to the number of lines indicated; papers with multiple
-authors and affiliations may require two or more lines. 
-Note that the submission version of technical papers \emph{should be 
-anonymized for review}. 
-
-\subsubsection{Abstract}
-Each paper must contain an abstract that appears at the beginning of the paper.
-
-\subsection{Basic layout features}
-
+The Loss has been calculated using CTC. It can be considered as output layer of Neural network to deal with the following main problems:
 \begin{itemize}
 %\itemsep -1.3mm
-\item Proceedings will be printed in A4 format. The layout is designed 
-so that files, when printed in US Letter format, include all material 
-but margins are not symmetric. 
-Although this is not an absolute requirement, if at all possible,
-{\bf PLEASE TRY TO MAKE YOUR SUBMISSION IN A4 FORMAT.}
-\item Two columns are used except for the title part and possibly for large 
-figures that need a full page width.
-\item Left margin is 20 mm.
-\item Column width is 80 mm.
-\item Spacing between columns is 10 mm.
-\item Top margin 25 mm (except first page 30 mm to title top).
-\item Text height (without headers and footers) is maximum 235 mm.
-\item Headers and footers must be left empty (they will be added for 
-printing).
-\item Check indentations and spacings by comparing to this 
-example file (in pdf format).
+\item The consumed time during annotation process of the whole data set on digit level which would be one to one correspondence between outputs and labels.
+\item The limitation in the available information about the digits and its constraints which could be affected during the processing through many factors like noise or image resolution.
 \end{itemize}
-
-\subsubsection{Headings}
-
-Section headings are centered in boldface
-with the first word capitalized and the rest of the heading in 
-lower case. Sub-headings appear like major headings, except they 
-start at the left margin in the column.
-Sub-sub-headings appear like sub-headings, except they are in italics 
-and not boldface. See the examples given in this 
-file. No more than 3 levels of headings should be used.
-
-\subsection{Text font}
-
-Times or Times Roman font is used for the main text. Recommended 
-font size is 9 points which is also the minimum allowed size.
-Other font types may be used if needed for 
-special purposes. While making the final PostScript file, 
-remember to include all fonts!
-
-\LaTeX\ users: DO NOT USE Computer Modern FONT FOR TEXT (Times is 
-specified in the style file). If possible, make the final 
-document using POSTSCRIPT FONTS.
-This is necessary given that, for example, equations with 
-non-ps Computer Modern are very hard to read on screen.
-
-\subsection{Figures}
-
-All figures must be centered on the column (or page, if the figure spans 
-both columns).
-Figure captions should follow each figure and have the format given in 
-Fig.~\ref{spprod}.
-
-Figures should preferably be line drawings. If they contain gray 
-levels or colors, they should be checked to print well on a 
-high-quality non-color laser printer.
-
-\subsection{Tables}
-
-An example of a table is shown as Table \ref{table1}. Somewhat 
-different styles are allowed according to the type and purpose of the 
-table. The caption text may be above or below the table.
-
-\begin{table}
-\caption{\label{table1} {\it This is an example of a table.}}
-\vspace{2mm}
-\centerline{
-\begin{tabular}{|c|c|}
-\hline
-ratio & decibels \\
-\hline  \hline
-1/1 & 0 \\
-2/1 & $\approx 6$ \\
-3.16 & 10 \\
-10/1 & 20 \\ 
-1/10 & -20 \\
-\hline
-\end{tabular}}
-\end{table}
-
-\subsection{Equations}
-
-Equations should be placed on separate lines and numbered. Examples 
-of equations are given below.
-Particularly,
-%
-%\vspace{-3mm}
+So These issues can be avoided through a function which is provided with the output matrix of the NN and the corresponding ground-truth (GT) text by trying all possible digit alignments between inputs and labels in the image and outputs at the end a classification at each input value by taking the highest score which conclude the real value. CTC uses the network to label the entire input sequence at once. This means the network can be trained with unsegmented data set, and the final label sequence can be seen directly from the network output. The input of CTC is a sequence $y=y_{1},....y_{T}$, where T is the sequence length then initiates the first step called Encoding by inserting randomly a pseudo character called Blank denoted with {-} which must be inserted in case of digits duplication. For a given $y_{T}$ it gives us an output distribution over all possibilities.Then a conditional probability is defined as the sum of probabilities of all $\pi$ which are mapped by F onto I:
 \begin{equation}
-x(t) = s(f_\omega(t))
-\label{eq1}
-\end{equation}
-where \(f_\omega(t)\) is a special warping function
-\begin{equation}
-f_\omega(t)=\frac{1}{2\pi j}\oint_C \frac{\nu^{-1k}d\nu}
-{(1-\beta\nu^{-1})(\nu^{-1}-\beta)}
-\label{eq2}
-\end{equation}
-A residue theorem states that
-\begin{equation}
-\oint_C F(z)dz=2 \pi j \sum_k Res[F(z),p_k]
+p( I | y)=\sum_{\pi \in F(I)} p( \pi | y )
 \label{eq3}
 \end{equation}
-Applying (\ref{eq3}) to (\ref{eq1}), 
-it is straightforward to see that
+where the conditional probability of $\pi$ is defined as: 
 \begin{equation}
-1 + 1 = \pi
-\label{eq4}
+p( \pi | y ) =\prod_t^T y_{\pi_{t}}
+\label{eq3}
 \end{equation}
+The probability $p( \pi | y )$ of a particular path is the product of all the softmax outputs "digit scores" $y_{\pi_{t}}$ over time T for one alignment. The function takes the negative log probability of ground truth all the training examplesvin training set D
+\begin{equation}
+\sum_{(i,y)_{\in D}} - \log  p( I | Y )
+\label{eq3}
+\end{equation}
+where y is the sequence produced by the recurrent layers from x. Then we should update the network through back propagation. By decoding, the function calculates the best path by taking the most likely character per time-step and undoes the encoding measures by first removing duplicate characters and then removing all blanks from the path and as a result remains the recognized text.
 
-Make sure to use \verb!\eqref! when refering to equation numbers.
-Finally we have proven the secret theorem of all speech sciences (see
-equation~\eqref{eq3} above).  No more math is needed to show how 
-useful the result is! 
-
-\begin{figure}[t]
-\centerline{\epsfig{figure=figure,width=40mm}}
-\caption{{\it Schematic diagram of speech production.}}  
-\label{spprod}
-\end{figure}
-
-\subsection{Hyperlinks}
-
-Hyperlinks can be included in your paper. Moreover, be aware that the paper
-submission procedure includes the option of specifying a hyperlink for
-additional information.  This hyperlink will be included in the CD-ROM.
-Particularly pay attention to the possibility, from this single hyperlink, to
-have further links to information such as other related documents, sound or
-multimedia.
-
-If you choose to use active hyperlinks in your paper, 
-please make sure that they present no problems in printing to paper. 
-
-\subsection{Page numbering}
-
-Final page numbers will be added later to the document
-electronically. 
-{\em Please don't make any headers or footers!}.
-
-\subsection{References}
-
-The reference format is the standard for IEEE publications.
-References should be numbered in order of appearance, 
-for example \cite{ES1}, \cite{ES2}, and \cite{ES3}. 
+\section{Recurrent Neural Network}
+Based on the human fact that we do not need to rethink from scratch rather building up on the available results, Recurrent Neural Network has been developed to solve this issue by the normal neural network using connected chunks of neural network. The information can be passed over the chunks in a loop intimately, but It shouldn’t go so far back to avoid gradient vanish problem during the parameter optimization especially by small number of Iterations. So LSTM should be used instead of RNN.The LSTM short of learning long-term dependencies does have the ability to remove or add information to the cell state, carefully regulated by 4 specified mechanism called gates:
+\begin{itemize}
+%\itemsep -1.3mm
+\item Forgetting mechanism.
+\item Saving (remembering) mechanism.
+\item Learning mechanism.
+\item Focusing long-term memory into working memory (next short memory).
+\end{itemize}
+LSTM transforms its memory in a very precise way using this mechanisms for which pieces of information to remember, which to update, and which to learn. This helps it keep track of information over longer periods of time. At the same time, the future events should be also considered therefore the network will be handle that trainings in the opposite direction i.e each training sequence forwards and backwards to two separate LSTM layer, und that has been called bidirectional LSTM. 
+ 
