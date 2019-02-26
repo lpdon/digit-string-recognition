@@ -87,29 +87,29 @@ reasons discussed in the data analysis in Section \ref{introduction}, the CVL
 test data is not represented well by its training data, especially regarding the
 small amount of different string labels. The idea is therefore to adopt the
 whole training data of CAR-A plus CAR-B to train the model from scratch and
-additionally fine tune it on CVL. Taken into account from the previous
+additionally fine-tune it on CVL. Taken into account from the previous
 experiments that the architecture is able to generalize well and to maximize the
 amount of training data, no validation data is used in these experiments. Apart
 from the lacking train-validation split, all the parameters remain the same. For
-fine tuning, all weights are trained for extra 20 epochs exclusively on CVL.
+fine-tuning, all weights are trained for extra 20 epochs exclusively on CVL.
 Table \ref{table_fine_tuning} contains the results for these experiments.
 
 The model trained on CAR-A+CAR-B without CVL data surpasses both the
 performances of models trained exclusively on these sets as well as the
-previously best CVL performance. By fine tuning the model on CVL however, the
+previously best CVL performance. By fine-tuning the model on CVL however, the
 CVL test performance achieved almost 76\%, which compared to the results in
 \cite{icfhr_competition} means a second best CVL performance losing only to
 BeiJing et al. \cite{icfhr_competition}. 
 
 \begin{table}
-\caption{\label{table_fine_tuning} {\it Performance using more than one set + fine tuning.}}
+\caption{\label{table_fine_tuning} {\it Performance using more than one set + fine-tuning.}}
 \vspace{2mm}
 \centerline{
 \begin{tabular}{*{3}{|c}|}
 \hline
 \backslashbox{Tested}{Trained} & 
 CAR-A + CAR-B &
-CVL (fine tuning)\\
+CVL (fine-tuning)\\
 \hline \hline 
 CAR-A & \textbf{0.9127} & 0.0565 \\
 CAR-B & \textbf{0.9408} & 0.4733 \\
@@ -208,7 +208,7 @@ consequence the deep learning model would require less effort and complexity.
 Of the many lessons learned during the development of this work, the most
 important is to recognize when overfitting is happening. Divergences between
 training and validation performance tend to happen but if they are too big a
-thoroughly analysis of the possible causes is necessary. Data augmentation and
+thorough analysis of the possible causes is necessary. Data augmentation and
 regularization methods do help but are not enough to overcome highly divergent
 performances, which are more likely caused by a wrong approach. Models for more
 complex tasks have so many parameters that is easy for them to memorize the
@@ -218,7 +218,7 @@ epochs.
 A second lesson is to analyze carefully which type of information is passed to
 the LSTM input gates. Just reshaping tensors output by the CNN to fit the LSTM
 input shape without any reasonable criteria does not deliver any valuable
-results. At first it is not clear what to use as input in the presented problem
+results. At first, it is not clear what to use as input in the presented problem
 since the sequence aspect is not instantly recognized as in problems which have
 for example image sequences as input or text sentences. Following the intuition
 of splitting the classification along the image width dimension, the LSTM time
@@ -230,5 +230,6 @@ This paper describes the implementation of a previously proposed full end-to-end
 architecture based on CNN + RNN-CTC to solve the digit string recognition
 problem. Cross-validation with different datasets is done to identify possible
 improvements due to not representative data and delivers impressive results.
-Finally, the RNN part is removed from the original model and shows better
-results for a task which in theory does not have context dependence. 
+Finally, the RNN part is removed from the original model and shows that better
+results can be achieved on datasets with small label variance in a task which
+in theory does not have context dependence. 

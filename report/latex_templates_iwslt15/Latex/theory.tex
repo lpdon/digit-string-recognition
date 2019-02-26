@@ -1,6 +1,8 @@
 \section{Connectionist Temporal Classification}\label{sec:ctc}
 
-The Loss has been calculated using CTC. It can be considered as an output layer of Neural network to deal with the following main problems:
+The loss is calculated using PyTorch's CTC loss function \cite{pytorch_ctc},
+which was first introduced by Graves et al.\cite{CTC}. It can be considered as
+an output layer to solve the following main problems:
 \begin{itemize}
 %\itemsep -1.3mm
 \item The consumed time during the annotation process of the whole data set on
@@ -10,46 +12,47 @@ labels.
 constraints which could be affected during the processing through many factors
 like noise or image resolution.
 \end{itemize}
-So These issues can be avoided through a function which is provided with the
-output matrix of the NN and the corresponding ground-truth (GT) text by trying
-all possible digit alignments between inputs and labels in the image and outputs
-at the end a classification at each input value by taking the highest score
-which conclude the real value. CTC uses the network to label the entire input
-sequence at once. This means the network can be trained with an unsegmented data
-set, and the final label sequence can be seen directly from the network output.
-The input of CTC is a sequence $y=y_{1},....y_{T}$ from a recurrent neural
-network with m inputs and n outouts, where T is the sequence length, For
-instance for an input squence y of length T, definde a RNN with m inputs, n
-ouputs and weight vektor w as a continous map $N_w$: ($\mathbb{R^m}$)
-$\rightarrow$  ($\mathbb{R^n}$).Then the first step called Encoding can be
-initiated through inserting randomly a pseudo character called Blank denoted
-with {-} which must be inserted in case of digits duplication. For a given
-$y_{T}$ it gives us an output distribution over all possibilities.Then a
+These issues can be avoided by using a function which is provided with the
+output matrix of the neural network and the corresponding ground-truth (GT) text
+by trying all possible digit alignments between inputs and labels in the image.
+It outputs at the end a classification at each input value by taking the highest
+probability. CTC uses the network to label the entire input sequence at once.
+This means the network can be trained with an unsegmented dataset and the final
+label sequence can be seen directly from the network output. 
+
+The input of CTC is
+a sequence $y=y_{1},....y_{T}$ from a recurrent neural network with $m$ inputs
+and $n$ outputs, where $T$ is the sequence length. For instance for an input
+sequence $y$ of length $T$, defined a RNN with $m$ inputs, $n$ outputs an
+weight vector $w$ as a continuous map $N_w$: ($\mathbb{R}^m$) $\rightarrow$
+($\mathbb{R}^n$). The first step called encoding can be initiated through
+inserting randomly a pseudo character called 'blank' denoted with {-} which must
+be inserted both in case of digits duplication and areas without digits. For a
+given $y_{T}$ it gives an output distribution over all possibilities. A
 conditional probability is defined as the sum of probabilities of all $\pi$
-which are mapped by F onto I:
+which are mapped by $F$ onto $I$:
 \begin{equation}
 p( I | y)=\sum_{\pi \in F(I)} p( \pi | y )
-\label{eq3}
+\label{eq1}
 \end{equation}
 where the conditional probability of $\pi$ is defined as: 
 \begin{equation}
 p( \pi | y ) =\prod_t^T y_{\pi_{t}}
-\label{eq3}
+\label{eq2}
 \end{equation}
 The probability $p( \pi | y )$ of a particular path or respectively label
-observing is the product of all the softmax outputs "digit scores" $y_{\pi_{t}}$
-over time T for one alignment. The function takes the negative log probability
-of ground truth all the training examples in training set D
+observation is the product of all the softmax 'digit scores' outputs $y_{\pi_{t}}$
+over time $T$ for one alignment. The function takes the negative log probability
+of ground truth all the training examples in training set $D$:
 \begin{equation}
-\sum_{(i,y)_{\in D}} - \log  p( I | Y )
+\sum_{(I,y) \in D} - \log  p( I | y )
 \label{eq3}
 \end{equation}
-where y is the sequence produced by the recurrent layers from x. Then we should
-update the network through back propagation. By decoding, the function
-calculates the best path by taking the most likely character per time-step and
-undoes the encoding measures by first removing duplicate characters and then
-removing all blanks from the path and as a result remains the recognized text
-\cite{CTC}.
+where $y$ is the sequence produced by the recurrent layers from $x$. By
+decoding, the function calculates the best path by taking the most likely
+character per time-step and removes the changes introduced by encoding by first
+removing duplicate characters and then removing all blanks from the path. As
+a result remains the recognized text.
 
 \section{Recurrent Neural Network}\label{sec:rnn}
 Based on the human fact that we do not need to rethink from scratch rather
