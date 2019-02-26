@@ -37,10 +37,9 @@
 \begin{document}
 \maketitle
 %
-\begin{abstract}
-This is a layout specification and template
-definition for the paper of the IWSLT 2015 Conference. 
-The format is essentially the one used for the IEEE ICASSP conferences.
+\begin{abstract} \label{sec:abstract}
+Convolutional Neural Networks have been widely used in recent years as powerful feature extractors to solve different computer vision tasks. Combined with Connectional Temporal Classification it is possible to train end-to-end models to be successful in tasks which involve both feature extraction from images and sequence labeling such as digit string recognition. This work reimplements a previously proposed CNN + RNN-CTC network and evaluates it on the datasets provided for the HDSRC2014 competition. By combining data from different datasets, recognition rates on ORAND-CAR-A, ORAND-CAR-B and CVL of 91.27\%, 94.08\% and 75.79\% are achieved respectively. In addition to it, the performance impact of the RNN part of the network is evaluated. 
+
 \end{abstract}
 
 
@@ -52,11 +51,6 @@ The format is essentially the one used for the IEEE ICASSP conferences.
 \input{model}
 
 \input{evaluation}
-
-\section{Acknowledgements}
-The IWSLT 2015 organizing committee would like to thank the
-organizing committees of INTERSPEECH 2004 for their
-help and for kindly providing the template files.
 
 %
 \bibliographystyle{IEEEtran}

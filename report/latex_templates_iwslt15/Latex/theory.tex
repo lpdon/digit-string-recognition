@@ -1,12 +1,12 @@
 \section{Connectionist Temporal Classification}\label{sec:ctc}
 
-The Loss has been calculated using CTC. It can be considered as output layer of Neural network to deal with the following main problems:
+The Loss has been calculated using CTC. It can be considered as an output layer of Neural network to deal with the following main problems:
 \begin{itemize}
 %\itemsep -1.3mm
-\item The consumed time during annotation process of the whole data set on digit level which would be one to one correspondence between outputs and labels.
-\item The limitation in the available information about the digits and its constraints which could be affected during the processing through many factors like noise or image resolution.
+\item The consumed time during the annotation process of the whole data set on digit level, which would be one to one correspondence between outputs and labels.
+\item The limitation on the available information about the digits and its constraints which could be affected during the processing through many factors like noise or image resolution.
 \end{itemize}
-So These issues can be avoided through a function which is provided with the output matrix of the NN and the corresponding ground-truth (GT) text by trying all possible digit alignments between inputs and labels in the image and outputs at the end a classification at each input value by taking the highest score which conclude the real value. CTC uses the network to label the entire input sequence at once. This means the network can be trained with unsegmented data set, and the final label sequence can be seen directly from the network output. The input of CTC is a sequence $y=y_{1},....y_{T}$, where T is the sequence length then initiates the first step called Encoding by inserting randomly a pseudo character called Blank denoted with {-} which must be inserted in case of digits duplication. For a given $y_{T}$ it gives us an output distribution over all possibilities.Then a conditional probability is defined as the sum of probabilities of all $\pi$ which are mapped by F onto I:
+So These issues can be avoided through a function which is provided with the output matrix of the NN and the corresponding ground-truth (GT) text by trying all possible digit alignments between inputs and labels in the image and outputs at the end a classification at each input value by taking the highest score which conclude the real value. CTC uses the network to label the entire input sequence at once. This means the network can be trained with an unsegmented data set, and the final label sequence can be seen directly from the network output. The input of CTC is a sequence $y=y_{1},....y_{T}$ from a recurrent neural network with m inputs and n outouts, where T is the sequence length, For instance for an input squence y of length T, definde a RNN with m inputs, n ouputs and weight vektor w as a continous map $N_w$: ($\mathbb{R^m}$) $\rightarrow$  ($\mathbb{R^n}$).Then the first step called Encoding can be initiated through inserting randomly a pseudo character called Blank denoted with {-} which must be inserted in case of digits duplication. For a given $y_{T}$ it gives us an output distribution over all possibilities.Then a conditional probability is defined as the sum of probabilities of all $\pi$ which are mapped by F onto I:
 \begin{equation}
 p( I | y)=\sum_{\pi \in F(I)} p( \pi | y )
 \label{eq3}
@@ -16,21 +16,21 @@ where the conditional probability of $\pi$ is defined as:
 p( \pi | y ) =\prod_t^T y_{\pi_{t}}
 \label{eq3}
 \end{equation}
-The probability $p( \pi | y )$ of a particular path is the product of all the softmax outputs "digit scores" $y_{\pi_{t}}$ over time T for one alignment. The function takes the negative log probability of ground truth all the training examplesvin training set D
+The probability $p( \pi | y )$ of a particular path or respectively label observing is the product of all the softmax outputs "digit scores" $y_{\pi_{t}}$ over time T for one alignment. The function takes the negative log probability of ground truth all the training examples in training set D
 \begin{equation}
 \sum_{(i,y)_{\in D}} - \log  p( I | Y )
 \label{eq3}
 \end{equation}
-where y is the sequence produced by the recurrent layers from x. Then we should update the network through back propagation. By decoding, the function calculates the best path by taking the most likely character per time-step and undoes the encoding measures by first removing duplicate characters and then removing all blanks from the path and as a result remains the recognized text.
+where y is the sequence produced by the recurrent layers from x. Then we should update the network through back propagation. By decoding, the function calculates the best path by taking the most likely character per time-step and undoes the encoding measures by first removing duplicate characters and then removing all blanks from the path and as a result remains the recognized text \cite{CTC}.
+
 
 \section{Recurrent Neural Network}\label{sec:rnn}
-Based on the human fact that we do not need to rethink from scratch rather building up on the available results, Recurrent Neural Network has been developed to solve this issue by the normal neural network using connected chunks of neural network. The information can be passed over the chunks in a loop intimately, but It shouldn’t go so far back to avoid gradient vanish problem during the parameter optimization especially by small number of Iterations. So LSTM should be used instead of RNN.The LSTM short of learning long-term dependencies does have the ability to remove or add information to the cell state, carefully regulated by 4 specified mechanism called gates:
+Based on the human fact that we do not need to rethink from scratch rather building up on the available results, Recurrent Neural Network has been developed to solve this issue with the normal neural network using connected chunks of neural network. The information can be passed over the chunks in a loop intimately, but It shouldn’t go so far back to avoid gradient vanish problem during the parameter optimization especially by a small number of Iterations. So LSTM should be used instead of the RNN.The LSTM short of learning long-term dependencies does have the ability to remove or add information to the cell state, carefully regulated by 4 specified mechanism called gates:
 \begin{itemize}
 %\itemsep -1.3mm
 \item Forgetting mechanism.
 \item Saving (remembering) mechanism.
 \item Learning mechanism.
-\item Focusing long-term memory into working memory (next short memory).
+\item Focusing long-term memory into working memory which is the next short memory.
 \end{itemize}
-LSTM transforms its memory in a very precise way using this mechanisms for which pieces of information to remember, which to update, and which to learn. This helps it keep track of information over longer periods of time. At the same time, the future events should be also considered therefore the network will be handle that trainings in the opposite direction i.e each training sequence forwards and backwards to two separate LSTM layer, und that has been called bidirectional LSTM. 
- 
+LSTM transforms its memory in a very precise way using these mechanisms for which pieces of information to remember, which to update, and which to learn. This helps it keep track of information over longer periods of time. At the same time, the future events should be also considered, therefore the network will be handle that trainings in the opposite direction, i.e each training sequence forwards and backwards to two separate LSTM layer, und that has been called bidirectional LSTM. 

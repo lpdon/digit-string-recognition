@@ -1,14 +1,14 @@
 \section{Approach}\label{sec:approach}
 
 \subsection{Architecture}\label{subsec:architecture}
-This section covers the architecture, with which we achieved our best results, which are presented in \autoref{sec:evaluation}. Our architecture is based on a published architecture~\cite{CTC} which achieved the best performance in the competition ICFHR 2014~\cite{icfhr_competition}.
+This section covers the architecture, with which we achieved our best results, which are presented in Section \ref{sec:evaluation}. Our architecture is based on a published architecture~\cite{CTC} which achieved the best performance in the competition ICFHR 2014~\cite{icfhr_competition}.
 
 The task of digit string recognition poses several challenges across different machine learning disciplines.
 On the one hand, the input image is a high-dimensional tensor (after resizing $120\times50\times3$).
 As a consequence, the input will have a low information density and considerable amount of noise.
 A proven neural network architecture class for processing images are convolutional neural networks (CNN).
 More specifically, we employ a smaller variant of the Residual Network (ResNet)~\cite{ResNet} architecture.
-See \autoref{fig:resblock} for a detailed view of our implementation of the residual architecture.
+See Fig.~\ref{fig:resblock} for a detailed view of our implementation of the residual architecture.
 After every convolutional layer we performed batch normalization~\cite{batchnorm} to prevent internal covariance shift and accelerate training.
 This first step in our architecture can be seen as an \emph{encoder}, mapping the input image to a 3 dimensional tensor with lower spatial dimensions ($15 \times 6$) but more channels (512).
 
@@ -21,7 +21,7 @@ The remaining task is to decode this tensor by labeling every element of the seq
 We output scores for every digit and blank for each element in the sequence.
 The output dimensionality of every label is therefore 11.
 The class network architecture we use for this task are called recurrent neural networks (RNNs).
-As described in \autoref{sec:rnn}, vanilla RNNs suffer from the vanishing gradient problem.
+As described in Section \ref{sec:rnn}, vanilla RNNs suffer from the vanishing gradient problem.
 We therefore use long short term memory (LSTM)~\cite{LSTM}, which mitigate this issue.
 LSTMs can be stacked by using the output of the previous layer as input to the next layer.
 We use two layer LSTMs to allow the network to learn a more complex function.
@@ -30,12 +30,12 @@ Our BiLSTM outputs a 100-d vector at every time step.
 Finally a linear layer is used to reduce this dimension to 11.
 During training we use log-softmax to prepare the output for calculation of the CTC-Loss.
 When inferring labels we select the element with the highest output using the argmax operator at each time step.
-The full architecture is shown in \autoref{fig:architecture}.
+The full architecture is shown in Fig.~\ref{fig:architecture}.
 
 \begin{figure}
     \begin{center}
 \begin{tikzpicture}
-    \node[rectangle,minimum width=4.2cm,draw,rotate=90] at (0,2.1) (input) {Input-Image (150$\times$50$\times$3)};
+    \node[rectangle,minimum width=4.2cm,draw,rotate=90] at (0,2.1) (input) {Input-Image (120$\times$50$\times$3)};
     \node[rectangle,minimum width=4.2cm,draw,rotate=90] at (0.7,2.1) (conv1) {Convolution, k=3, d=64};
     \node[rectangle,minimum width=4.2cm,draw,rotate=90] at (1.4,2.1) (pool1) {Max Pool, k=3,s=1};
     \node[rectangle,minimum width=4.2cm,draw,rotate=90] at (2.1,2.1) (res1) {Residual Block, d=64,s=1};
@@ -47,7 +47,7 @@ The full architecture is shown in \autoref{fig:architecture}.
     \node[rectangle,minimum width=4.1cm,draw,rotate=90] at (6,2.1) (fc1) {FC, d=100};
     \node[rectangle,minimum width=4.1cm,draw,rotate=90] at (6.7,2.1) (fc2) {FC, d=11};
 \end{tikzpicture}
-\caption{Schematic of our architecture. Dropouts and batch normalizations are omitted for brevity.}\label{fig:architecture}
+\caption{\it Schematic of our architecture. Dropouts and batch normalizations are omitted for brevity.}\label{fig:architecture}
 \end{center}
 \end{figure}
 \begin{figure}
@@ -64,14 +64,14 @@ The full architecture is shown in \autoref{fig:architecture}.
     \draw[->] (resconv) .. controls (3,-3.75) .. (add);
     \draw[->] (add) -- (0,-4.5);
 \end{tikzpicture}
-\caption{Schematics of a residual block in our architecture. If the output dimension does not change (as in our first residual block, the linear mapping in the residual path is not required and therefore omitted. Furthermore does the first residual block use a stride of 1 instead of 2.}\label{fig:resblock}
+\caption{\it Schematics of a residual block in our architecture. If the output dimension does not change (as in our first residual block, the linear mapping in the residual path is not required and therefore omitted. Furthermore does the first residual block use a stride of 1 instead of 2.}\label{fig:resblock}
 \end{center}
 \end{figure}
 \subsection{Training}\label{subsec:training}
 
 We divided our training in epochs.
 In each epoch we observe every training sample once.
-Each sample is randomly manipulated by different data augmentation methods as described in \autoref{Datasets}.
+Each sample is randomly manipulated by different data augmentation methods as described in Section \ref{Datasets}.
 We normalized each sample by channel-wise whitening (subtracting dataset mean color value and dividing by dataset variance).
 The Adam~\cite{Adam} is used to minimize the CTC loss per batch.
 We found a batch-size of 32 to deliver the best results.
