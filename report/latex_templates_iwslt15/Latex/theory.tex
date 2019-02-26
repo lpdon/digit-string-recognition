@@ -1,4 +1,5 @@
-\section{Connectionist Temporal Classification}\label{sec:ctc}
+\section{Theory}\label{sec:theory}
+\subsection{Connectionist Temporal Classification}\label{subsec:ctc}
 
 The loss is calculated using PyTorch's CTC loss function \cite{pytorch_ctc},
 which was first introduced by Graves et al.\cite{CTC}. It can be considered as
@@ -6,7 +7,7 @@ an output layer to solve the following main problems:
 \begin{itemize}
 %\itemsep -1.3mm
 \item The consumed time during the annotation process of the whole data set on
-digit level, which would be one to one correspondence between outputs and
+digit level, which would be one-to-one correspondence between outputs and
 labels.
 \item The limitation on the available information about the digits and its
 constraints which could be affected during the processing through many factors
@@ -23,11 +24,11 @@ label sequence can be seen directly from the network output.
 The input of CTC is
 a sequence $y=y_{1},....y_{T}$ from a recurrent neural network with $m$ inputs
 and $n$ outputs, where $T$ is the sequence length. For instance for an input
-sequence $y$ of length $T$, defined a RNN with $m$ inputs, $n$ outputs an
+sequence $y$ of length $T$, defined an RNN with $m$ inputs, $n$ outputs a
 weight vector $w$ as a continuous map $N_w$: ($\mathbb{R}^m$) $\rightarrow$
 ($\mathbb{R}^n$). The first step called encoding can be initiated through
 inserting randomly a pseudo character called 'blank' denoted with {-} which must
-be inserted both in case of digits duplication and areas without digits. For a
+be inserted both in case of digits duplication and if a digit is missing. For a
 given $y_{T}$ it gives an output distribution over all possibilities. A
 conditional probability is defined as the sum of probabilities of all $\pi$
 which are mapped by $F$ onto $I$:
@@ -52,29 +53,14 @@ where $y$ is the sequence produced by the recurrent layers from $x$. By
 decoding, the function calculates the best path by taking the most likely
 character per time-step and removes the changes introduced by encoding by first
 removing duplicate characters and then removing all blanks from the path. As
-a result remains the recognized text.
+result remains the recognized text.
 
-\section{Recurrent Neural Network}\label{sec:rnn}
-Based on the human fact that we do not need to rethink from scratch rather
-building up on the available results, Recurrent Neural Network has been
-developed to solve this issue with the normal neural network using connected
-chunks of neural network. The information can be passed over the chunks in a
-loop intimately, but It shouldn’t go so far back to avoid gradient vanish
-problem during the parameter optimization especially by a small number of
-Iterations. So LSTM should be used instead of the RNN.The LSTM short of learning
-long-term dependencies does have the ability to remove or add information to the
-cell state, carefully regulated by 4 specified mechanism called gates:
-\begin{itemize}
-%\itemsep -1.3mm
-\item Forgetting mechanism.
-\item Saving (remembering) mechanism.
-\item Learning mechanism.
-\item Focusing long-term memory into working memory which is the next short memory.
-\end{itemize}
-LSTM transforms its memory in a very precise way using these mechanisms for
-which pieces of information to remember, which to update, and which to learn.
-This helps it keep track of information over longer periods of time. At the same
-time, the future events should be also considered, therefore the network will be
-handle that trainings in the opposite direction, i.e each training sequence
-forwards and backwards to two separate LSTM layer, und that has been called
-bidirectional LSTM. 
+\subsection{Recurrent Neural Networks}\label{subsec:rnn}
+Recurrent Neural Networks are connectionist models which make use of
+sequence steps to process information \cite{RNN}. Through its feedback
+connections it is able to retain past information and learn correlations in time
+but can suffer from problems to train properly such as vanishing gradient
+\cite{vanishing_gradient}. Newer architectures such as LSTM \cite{LSTM}
+and GRU \cite{GRU} aim to solve the RNN problems by introducing a gating
+mechanism. GRU trains faster due to the smaller number of parameters, but both
+achieve in practice similar performances \cite{LSTMvsGRU}. 

@@ -3,24 +3,55 @@ In recent years the recognition of handwritten digits has been systematically im
 dataset that contains about 70.000 images of handwritten digits along with their corresponding labels, numerous papers were published that apply convolutional neural networks (CNNs)
 to achieve error rates of 0.23\% \cite{MNIST_2012} or even 0.21\% \cite{MNIST_boosting}.
 
-As these results almost cope with human performance and a good dataset does need to represent a sufficiently challenging problem to stay useful and to ensure its longevity, various adjustments can be contemplated. One way could be the extension of the underlying dataset \cite{EMNIST}.
+As these results almost cope with human performance and a good dataset does need
+to represent a sufficiently challenging problem to stay useful and to ensure its
+longevity, various adjustments can be contemplated. One way could be the
+extension of the underlying dataset \cite{EMNIST}.
 
-Another approach would be the extension of the task itself by not only recognizing single digits but whole digit strings. In 2014 the ICFHR (International Conference on Frontiers in Handwriting Recognition) announced a competition to attend that matter: Handwritten Digit String Recognition in Challenging Datasets (HDSRC2014) \cite{icfhr_competition}.
+Another approach would be the extension of the task itself by not only
+recognizing single digits but whole digit strings. In 2014 the ICFHR
+(International Conference on Frontiers in Handwriting Recognition) announced a
+competition to attend that matter: Handwritten Digit String Recognition in
+Challenging Datasets (HDSRC2014) \cite{icfhr_competition}.
 
-In course of that they proposed a new benchmark framework that consists of two real world datasets and respective evaluation measures. The task's complexity is not only founded on the connected digits but also on the additional challenges that come along with the images' real world nature as document layout, background texture or noisy strokes. 
+In course of that they proposed a new benchmark framework that consists of two
+real world datasets and respective evaluation measures. The task's complexity is
+not only founded on the connected digits but also on the additional challenges
+that come along with the images' real world nature as document layout,
+background texture or noisy strokes. 
 
-Traditional approaches to digit string recognition often used segmentation. The string image is segmented to pieces that in best case represent single digits. The recognition results of these single pieces are then combined to get global optimal results. Since these approaches in practice suffer from various handwritten styles, connected or even overlapped characters and noises, \cite{zhan2017} proposes an segmentation free approach. 
+Traditional approaches to digit string recognition often used segmentation. The
+string image is segmented to pieces that in best case represent single digits.
+The recognition results of these single pieces are then combined to get global
+optimal results. Since these approaches in practice suffer from various
+handwritten styles, connected or even overlapped characters and noises,
+\cite{zhan2017} proposes an segmentation free approach. 
 
-Their model uses ResNet with convolutional layers \cite{ResNet} as an discriminative sequence extractor and feature decoder, combines it with an bidirectional LSTM and calculates the loss with connectionist temporal classificiation (CTC) \cite{CTC}.
+Their model uses ResNet with convolutional layers \cite{ResNet} as an
+discriminative sequence extractor and feature decoder, combines it with an
+bidirectional LSTM and calculates the loss with connectionist temporal
+classificiation (CTC) \cite{CTC}.
 
-Since this approach achieved remarkable results on the given datasets we used it as fundament for our own model.
+Since this approach achieved remarkable results on the given datasets we used it
+as fundament for our own model.
 
-The rest of this paper is organized as follows. In Section \ref{Datasets} we briefly describe the real world datasets given by the HDSRC2014. Then, details of our experiments are presented in Section \ref{sec:evaluation}. Section \ref{sec:conclusion} concludes this paper.
+The rest of this paper is organized as follows. In Section \ref{Datasets} we
+briefly describe the real world datasets given by the HDSRC2014. Section
+\ref{sec:theory} introduces the theoritical background to understand the model.
+Then, details of our experiments are presented in Section \ref{sec:evaluation}.
+Finally, Sections \ref{sec:lessons} and \ref{sec:conclusion} discuss mistakes
+to be avoided and conclude this paper, respectively.
 
 \section{Databases} \label{Datasets}
 There are two different databases for recognizing handwritten digit strings we used in our experiments.
 
-The first database, named ORAND-CAR, is a real world database with 11719 images of the 'Courtesy Amount Recognition (CAR)' field of bank checks. It originates from two different sources, one bank of Chile and one of Uruguay, and therefore shows different characteristics in terms of check layout, image quality and further noise. That is the reason the database is splitted into two subsets called ORAND-CAR-A (CAR-A) and ORAND-CAR-B (CAR-B). Samples of both datasets are shown in Fig.~\ref{fig:carA} and Fig.~\ref{fig:carB}.
+The first database, named ORAND-CAR, is a real world database with 11719 images
+of the 'Courtesy Amount Recognition (CAR)' field of bank checks. It originates
+from two different sources, one bank of Chile and one of Uruguay, and therefore
+shows different characteristics in terms of check layout, image quality and
+further noise. That is the reason the database is splitted into two subsets
+called ORAND-CAR-A (CAR-A) and ORAND-CAR-B (CAR-B). Samples of both datasets are
+shown in Fig.~\ref{fig:carA} and Fig.~\ref{fig:carB}.
 
 \begin{figure}
   \includegraphics[width=\linewidth]{images/CAR-A-Splitted.png}

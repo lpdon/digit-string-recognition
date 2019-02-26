@@ -20,8 +20,7 @@ If this is not possible or the sequence length should be variable without changi
 The remaining task is to decode this tensor by labeling every element of the sequence with a digit or blank.
 We output scores for every digit and blank for each element in the sequence.
 The output dimensionality of every label is therefore 11.
-The class network architecture we use for this task are called recurrent neural networks (RNNs).
-As described in Section \ref{sec:rnn}, vanilla RNNs suffer from the vanishing gradient problem.
+As described in Section \ref{subsec:rnn}, vanilla RNNs suffer from the vanishing gradient problem.
 We therefore use long short term memory (LSTM)~\cite{LSTM}, which mitigate this issue.
 LSTMs can be stacked by using the output of the previous layer as input to the next layer.
 We use two layer LSTMs to allow the network to learn a more complex function.
