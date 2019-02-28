@@ -10,7 +10,7 @@ A proven neural network architecture class for processing images are convolution
 More specifically, we employ a smaller variant of the Residual Network (ResNet)~\cite{ResNet} architecture.
 See Fig.~\ref{fig:resblock} for a detailed view of our implementation of the residual architecture.
 After every convolutional layer we performed batch normalization~\cite{batchnorm} to prevent internal covariance shift and accelerate training.
-This first step in our architecture can be seen as an \emph{encoder}, mapping the input image to a 3 dimensional tensor with lower spatial dimensions ($15 \times 6$) but more channels (512).
+This first step in our architecture can be seen as an \emph{encoder}, mapping the input image to a latent 3 dimensional tensor with lower spatial dimensions ($15 \times 6$) but more channels (512).
 
 We then interpret the output as a sequence along the horizontal axis.
 For simplicity we have designed the horizontal output dimension of the encoder to be equal to the maximal sequence length.
@@ -54,7 +54,7 @@ The full architecture is shown in Fig.~\ref{fig:architecture}.
 \begin{tikzpicture}
     \node[rectangle, minimum width=2.5cm,draw,align=center] at (0,-1) (conv1) {Convolution\\ k=3, s=2};
     \node[rectangle, minimum width=2.5cm,draw,align=center] at (0,-2.5) (conv2) {Convolution\\ k=3, s=1};
-    \node[rectangle, minimum width=2.5cm,draw,align=center] at (3,-1.75) (resconv) {Convolution\\ k=1, s=1};
+    \node[rectangle, minimum width=2.5cm,draw,align=center] at (3,-1.75) (resconv) {Convolution\\ k=1, s=2};
     \node[circle,draw,align=center] at (0,-3.75) (add) {$+$};
     \draw[->] (0,0.2) -- (conv1);
     \draw[->] (conv1) -- (conv2);
@@ -72,8 +72,8 @@ We divided our training in epochs.
 In each epoch we observe every training sample once.
 Each sample is randomly manipulated by different data augmentation methods as described in Section \ref{Datasets}.
 We normalized each sample by channel-wise whitening (subtracting dataset mean color value and dividing by dataset variance).
-The Adam~\cite{Adam} is used to minimize the CTC loss per batch.
-We found a batch-size of 32 to deliver the best results.
+The Adam~\cite{Adam} optimizer is used to minimize the CTC loss per batch.
+We found a batch-size of 16 to deliver the best results.
 Higher batch-sizes resulted into very slow learning, due to seldom updates, while lower batch-sizes did had less parallelization on GPU and where therefore slower to compute.
 Increasing the step size when using higher batch-sizes did not speed up training either.
 We suspect that the loss function surface is shaped in a way, such that higher variance gradient descent (as achieved by lower batch-sizes) results in faster convergence.
