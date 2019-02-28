@@ -1,35 +1,30 @@
 \section{Theory}\label{sec:theory}
+This section briefly introduces the most important theoretical background to understand our chosen approach.
 \subsection{Connectionist Temporal Classification}\label{subsec:ctc}
 
-The loss is calculated using PyTorch's CTC loss function \cite{pytorch_ctc},
+The loss of our neural network is calculated using PyTorch's CTC loss function \cite{pytorch_ctc},
 which was first introduced by Graves et al.\cite{CTC}. It can be considered as
 an output layer to solve the following main problems:
 \begin{itemize}
 %\itemsep -1.3mm
-\item The consumed time during the annotation process of the whole data set on
+\item The consumed time during the annotation process of the whole dataset on
 digit level, which would be one-to-one correspondence between outputs and
 labels.
-\item The limitation on the available information about the digits and its
-constraints which could be affected during the processing through many factors
-like noise or image resolution.
+\item The limited information on the digits and their
+constraints which could be affected through many factors like noise or image resolution.
 \end{itemize}
 These issues can be avoided by using a function which is provided with the
 output matrix of the neural network and the corresponding ground-truth (GT) text
 by trying all possible digit alignments between inputs and labels in the image.
-It outputs at the end a classification at each input value by taking the highest
+In the end it outputs a classification at each input value by taking the highest
 probability. CTC uses the network to label the entire input sequence at once.
 This means the network can be trained with an unsegmented dataset and the final
 label sequence can be seen directly from the network output. 
 
-The input of CTC is
-a sequence $y=y_{1},....y_{T}$ from a recurrent neural network with $m$ inputs
-and $n$ outputs, where $T$ is the sequence length. For instance for an input
-sequence $y$ of length $T$, defined an RNN with $m$ inputs, $n$ outputs a
-weight vector $w$ as a continuous map $N_w$: ($\mathbb{R}^m$) $\rightarrow$
+The input of CTC is a sequence $y=y_{1},....y_{T}$ from a recurrent neural network with $m$ inputs
+and $n$ outputs. For instance for an input sequence $y$ of length $T$, define a RNN with $m$ inputs, $n$ outputs and a weight vector $w$ as a continuous map $N_w$: ($\mathbb{R}^m$) $\rightarrow$
 ($\mathbb{R}^n$). The first step called encoding can be initiated through
-inserting randomly a pseudo character called 'blank' denoted with {-} which must
-be inserted both in case of digits duplication and if a digit is missing. For a
-given $y_{T}$ it gives an output distribution over all possibilities. A
+inserting a pseudo character called 'blank' denoted with {-} both in case of digits duplication and if a digit is missing. For a given $y$ it gives an output distribution over all possibilities. A
 conditional probability is defined as the sum of probabilities of all $\pi$
 which are mapped by $F$ onto $I$:
 \begin{equation}
@@ -44,14 +39,13 @@ p( \pi | y ) =\prod_t^T y_{\pi_{t}}
 The probability $p( \pi | y )$ of a particular path or respectively label
 observation is the product of all the softmax 'digit scores' outputs $y_{\pi_{t}}$
 over time $T$ for one alignment. The function takes the negative log probability
-of ground truth all the training examples in training set $D$:
+of ground truth all the training examples in the training set $D$:
 \begin{equation}
 \sum_{(I,y) \in D} - \log  p( I | y )
 \label{eq3}
 \end{equation}
-where $y$ is the sequence produced by the recurrent layers from $x$. By
-decoding, the function calculates the best path by taking the most likely
-character per time-step and removes the changes introduced by encoding by first
+For decoding the function calculates the best path by taking the most likely
+character per time-step and removes the former changes introduced by encoding by first
 removing duplicate characters and then removing all blanks from the path. As
 result remains the recognized text.
 
